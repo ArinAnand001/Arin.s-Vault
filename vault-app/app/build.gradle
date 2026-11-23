@@ -1,0 +1,69 @@
+plugins {
+    id 'com.android.application'
+}
+
+// The GitHub build passes these in (see build-apk.yml). Local builds get safe defaults.
+def env = System.getenv()
+def appName = env.APP_NAME ?: 'Vault'
+def appNameSafe = appName.replace('"', '')
+def buildNumber = (env.VERSION_CODE ?: '1') as int
+def repo = env.GITHUB_REPOSITORY ?: ''
+def branch = env.GITHUB_REF_NAME ?: 'main'
+def keystorePath = env.KEYSTORE_PATH
+def keystorePassword = env.KEYSTORE_PASSWORD
+
+android {
+    namespace = 'com.anand.vault'
+    compileSdk = 36
+
+    defaultConfig {
+        applicationId = 'com.anand.vault'
+        minSdk = 26
+        targetSdk = 35
+        versionCode = buildNumber
+        versionName = "1.${buildNumber}"
+        resValue 'string', 'app_name', appNameSafe
+        buildConfigField 'String', 'APP_NAME', "\"${appNameSafe}\""
+        buildConfigField 'String', 'REPO', "\"${repo}\""
+        buildConfigField 'String', 'BRANCH', "\"${branch}\""
+    }
+
+    buildFeatures {
+        buildConfig = true
+    }
+
+    signingConfigs {
+        release {
+            if (keystorePath) {
+                storeFile = file(keystorePath)
+                storePassword = keystorePassword
+                keyAlias = 'vault'
+                keyPassword = keystorePassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled = false
+            signingConfig = keystorePath ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    lint {
+        checkReleaseBuilds = false
+        abortOnError = false
+    }
+}
+
+dependencies {
+    implementation 'androidx.activity:activity:1.10.1'
+    implementation 'androidx.core:core:1.16.0'
+    implementation 'androidx.work:work-runtime:2.10.1'
+    implementation 'com.google.android.gms:play-services-auth:21.5.1'
+}

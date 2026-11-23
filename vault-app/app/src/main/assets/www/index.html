@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Vault</title>
+<style>
+:root{
+  --plum:#4B285F; --plum-l:#6A3C84; --gold:#B69A68; --gold-l:#D9C49A; --gold-d:#8C7448;
+  --bg:#160B1D; --bg2:#1D0F26; --card:#25132F; --card2:#301A3C; --line:rgba(182,154,104,.16); --line2:rgba(255,255,255,.07);
+  --text:#F3ECE1; --muted:#B3A3BE; --dim:#7F6F8B; --danger:#E5767E; --ok:#9BCB9F;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,Roboto,"Segoe UI",sans-serif;overflow:hidden;overscroll-behavior:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;touch-action:manipulation}
+input{font:inherit;color:inherit;user-select:text;-webkit-user-select:text}
+img{-webkit-user-drag:none}
+[hidden]{display:none!important}
+svg.i{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.serif{font-family:"Noto Serif","Droid Serif",Georgia,serif}
+.gold{color:var(--gold)}
+.muted{color:var(--muted)}
+
+/* ---------- screens & pages ---------- */
+.screen{position:fixed;inset:0;display:none;flex-direction:column;background:var(--bg)}
+.screen.on{display:flex}
+.page{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;background:var(--bg);animation:slideIn .22s ease-out}
+.page.out{animation:slideOut .18s ease-in forwards}
+@keyframes slideIn{from{transform:translateX(28px);opacity:0}to{transform:none;opacity:1}}
+@keyframes slideOut{to{transform:translateX(28px);opacity:0}}
+.scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+
+/* ---------- emblem & brand ---------- */
+.emblem{display:inline-block;line-height:0}
+.emblem svg{width:100%;height:100%}
+.wordmark{font-family:"Noto Serif","Droid Serif",Georgia,serif;letter-spacing:.32em;text-transform:uppercase;font-weight:600;
+  background:linear-gradient(180deg,#E8D7B0,#B69A68 60%,#9C8152);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* ---------- buttons ---------- */
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:52px;border-radius:26px;font-weight:600;font-size:15.5px;letter-spacing:.01em}
+.btn.gold{background:linear-gradient(180deg,#C7AD7C,#B69A68);color:#2A1534;box-shadow:0 6px 18px rgba(182,154,104,.22)}
+.btn.google{background:#fff;color:#1f1f1f}
+.btn.google svg{width:20px;height:20px}
+.btn.ghost{border:1.5px solid rgba(182,154,104,.55);color:var(--gold-l)}
+.btn.danger{background:rgba(229,118,126,.12);color:var(--danger);border:1px solid rgba(229,118,126,.35)}
+.btn.small{height:40px;border-radius:20px;font-size:14px;width:auto;padding:0 18px}
+.btn:active{transform:scale(.985);filter:brightness(.95)}
+.btn[disabled]{opacity:.5;pointer-events:none}
+.ib{width:44px;height:44px;border-radius:22px;display:grid;place-items:center;color:var(--gold-l);position:relative}
+.ib:active{background:rgba(255,255,255,.06)}
+.badge{position:absolute;top:6px;right:5px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--danger);color:#fff;font-size:10.5px;font-weight:700;display:grid;place-items:center;border:2px solid var(--bg)}
+.link{color:var(--gold);font-weight:600;padding:10px}
+
+/* ---------- welcome ---------- */
+#welcome{background:radial-gradient(120% 70% at 50% 0%,rgba(107,60,132,.55),rgba(22,11,29,0) 70%),var(--bg);padding:0 26px}
+.wl-top{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding-top:30px}
+.wl-top .emblem{width:132px;height:132px;filter:drop-shadow(0 12px 30px rgba(0,0,0,.45))}
+.wl-top .wordmark{font-size:34px;margin:26px 0 8px;padding-left:.32em}
+.wl-top .tag{color:var(--muted);font-size:15px}
+.wl-points{display:flex;flex-direction:column;gap:12px;margin:26px auto 30px;max-width:320px;width:100%}
+.wl-points div{display:flex;align-items:center;gap:12px;color:#D9CDE0;font-size:14.5px}
+.wl-points svg{color:var(--gold)}
+.wl-actions{display:flex;flex-direction:column;gap:12px;padding-bottom:22px;max-width:420px;width:100%;margin:0 auto}
+.fine{color:var(--dim);font-size:12.5px;text-align:center;line-height:1.45;padding:2px 10px 0}
+
+/* ---------- PIN ---------- */
+#pin{z-index:900;background:radial-gradient(110% 60% at 50% 0%,rgba(107,60,132,.45),rgba(22,11,29,0) 70%),var(--bg);align-items:center;padding:0 24px}
+.pin-head{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:250px}
+.pin-head .emblem{width:64px;height:64px;margin-bottom:18px}
+.pin-head h2{font-size:21px;font-weight:600}
+.pin-head p.sub{color:var(--muted);margin-top:6px;font-size:14px}
+.dots{display:flex;gap:20px;margin:28px 0 10px}
+.dots i{width:15px;height:15px;border-radius:50%;border:1.8px solid var(--gold);transition:background .12s,transform .12s}
+.dots i.on{background:var(--gold);transform:scale(1.08)}
+.dots.shake{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-9px)}40%,80%{transform:translateX(9px)}}
+.pin-msg{min-height:20px;color:var(--danger);font-size:13.5px}
+.keypad{display:grid;grid-template-columns:repeat(3,76px);gap:16px 26px;justify-content:center;padding-bottom:8px}
+.key{width:76px;height:76px;border-radius:50%;background:rgba(255,255,255,.045);border:1px solid var(--line);font-size:28px;font-weight:400;color:var(--text);display:grid;place-items:center}
+.key:active{background:rgba(182,154,104,.22)}
+.key.fn{background:none;border:0;color:var(--gold-l);font-size:14px}
+.key.fn svg{width:28px;height:28px}
+.pin-foot{height:64px;display:flex;align-items:center;justify-content:center;gap:24px}
+.keypad.wait{opacity:.35;pointer-events:none}
+
+/* ---------- home ---------- */
+.top{display:flex;align-items:center;justify-content:space-between;padding:8px 8px 4px 18px;min-height:58px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand .emblem{width:30px;height:30px}
+.brand .wordmark{font-size:19px;letter-spacing:.26em}
+.top-actions{display:flex;gap:2px}
+.tabs{display:flex;margin:4px 16px 0;background:var(--card);border-radius:14px;padding:4px;border:1px solid var(--line)}
+.tabs button{flex:1;height:38px;border-radius:10px;color:var(--muted);font-weight:600;font-size:14px}
+.tabs button.on{background:linear-gradient(180deg,#5A3172,#4B285F);color:var(--gold-l);box-shadow:inset 0 0 0 1px rgba(182,154,104,.25)}
+.statusrow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 16px 6px}
+.chip{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 12px 0 10px;border-radius:16px;background:var(--card);border:1px solid var(--line);color:var(--muted);font-size:12.5px;max-width:66%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip svg{width:17px;height:17px;color:var(--gold)}
+.chip span{overflow:hidden;text-overflow:ellipsis}
+.chip.warn{color:#F1C7A0;border-color:rgba(241,199,160,.35)}
+.chip.warn svg{color:#F1C7A0}
+.filters{display:flex;gap:4px}
+.filters button{height:30px;padding:0 11px;border-radius:15px;font-size:12.5px;color:var(--dim);font-weight:600}
+.filters button.on{color:var(--gold-l);background:rgba(182,154,104,.12)}
+.spin{width:15px;height:15px;border-radius:50%;border:2px solid rgba(182,154,104,.3);border-top-color:var(--gold);animation:rot .8s linear infinite;flex:none}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* ---------- grid ---------- */
+.gh{font-size:13px;font-weight:600;color:var(--muted);padding:16px 16px 8px;letter-spacing:.02em}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:0 3px}
+@media (min-width:600px){.grid{grid-template-columns:repeat(5,1fr)}}
+.tile{position:relative;aspect-ratio:1;background:var(--card);overflow:hidden;border-radius:3px}
+.tile img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.tile .ph{position:absolute;inset:0;display:grid;place-items:center;color:var(--dim)}
+.tile .dur{position:absolute;left:0;right:0;bottom:0;padding:14px 6px 5px;display:flex;align-items:center;justify-content:flex-end;gap:3px;font-size:11.5px;font-weight:600;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.6))}
+.tile .dur svg{width:11px;height:11px}
+.tile .up{position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:10px;background:rgba(22,11,29,.72);display:grid;place-items:center;color:var(--gold-l)}
+.tile .up svg{width:13px;height:13px}
+.tile .days{position:absolute;left:5px;bottom:5px;font-size:11px;font-weight:600;background:rgba(22,11,29,.75);color:var(--gold-l);padding:2px 6px;border-radius:8px}
+.tile .chk{position:absolute;top:6px;left:6px;width:24px;height:24px;border-radius:12px;border:2px solid rgba(255,255,255,.85);display:none;place-items:center;background:rgba(0,0,0,.25)}
+.tile .chk svg{width:15px;height:15px;color:#2A1534;stroke-width:3;opacity:0}
+.selecting .tile .chk{display:grid}
+.tile.sel .chk{background:var(--gold);border-color:var(--gold)}
+.tile.sel .chk svg{opacity:1}
+.tile.sel img,.tile.sel .ph{transform:scale(.86);border-radius:8px;transition:transform .12s}
+.tile.sel{background:rgba(182,154,104,.18)}
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;padding:70px 34px 40px;color:var(--muted)}
+.empty .ring{width:92px;height:92px;border-radius:50%;display:grid;place-items:center;background:var(--card);border:1px solid var(--line);color:var(--gold);margin-bottom:18px}
+.empty .ring svg{width:38px;height:38px;stroke-width:1.5}
+.empty b{color:var(--text);font-size:17px;font-weight:600;margin-bottom:6px}
+.empty p{max-width:320px}
+.empty .btn{margin-top:22px;width:auto;padding:0 24px}
+.pad-bottom{height:110px}
+
+/* ---------- albums ---------- */
+.albums{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;padding:10px 16px}
+@media (min-width:600px){.albums{grid-template-columns:repeat(4,1fr)}}
+.acard{text-align:left;display:flex;flex-direction:column;gap:2px;min-width:0}
+.acover{aspect-ratio:1;border-radius:16px;overflow:hidden;background:var(--card);border:1px solid var(--line);display:grid;place-items:center;color:var(--gold);margin-bottom:8px;position:relative}
+.acover img{width:100%;height:100%;object-fit:cover}
+.acover svg{width:34px;height:34px;stroke-width:1.5}
+.acard b{font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acard span{font-size:12.5px;color:var(--muted)}
+.acard.new .acover{border:1.5px dashed rgba(182,154,104,.5);background:rgba(182,154,104,.05)}
+.acard.bin .acover{color:var(--muted)}
+
+/* ---------- FAB, selection ---------- */
+.fab{position:absolute;right:20px;bottom:22px;width:62px;height:62px;border-radius:31px;background:linear-gradient(160deg,#D2B98A,#B69A68 55%,#9E8253);color:#2A1534;display:grid;place-items:center;box-shadow:0 10px 26px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.15) inset;z-index:5}
+.fab svg{width:28px;height:28px;stroke-width:2.4}
+.fab:active{transform:scale(.95)}
+.selecting .fab{display:none}
+.seltop{position:absolute;left:0;right:0;top:0;min-height:58px;display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--bg2);border-bottom:1px solid var(--line);z-index:30}
+.seltop b{flex:1;font-size:17px;font-weight:600}
+.selbar{position:absolute;left:10px;right:10px;bottom:12px;display:flex;justify-content:space-around;background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:6px 4px;z-index:30;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.selbar button{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11.5px;color:var(--text);padding:6px 8px;min-width:64px;border-radius:12px}
+.selbar button svg{color:var(--gold-l)}
+.selbar button.danger,.selbar button.danger svg{color:var(--danger)}
+.selbar button:active{background:rgba(255,255,255,.06)}
+
+/* ---------- page header ---------- */
+.ph-head{display:flex;align-items:center;gap:4px;padding:8px 8px 8px 6px;min-height:58px}
+.ph-head h1{flex:1;font-size:19px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:4px}
+.ph-head h1 small{display:block;font-size:12.5px;color:var(--muted);font-weight:400}
+
+/* ---------- settings ---------- */
+.sec{margin:14px 16px 0}
+.sec h4{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:700;padding:6px 4px 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.row{display:flex;align-items:center;gap:14px;padding:14px 16px;min-height:58px;width:100%;text-align:left}
+.row+.row{border-top:1px solid var(--line2)}
+button.row:active{background:rgba(255,255,255,.04)}
+.row .ri{width:36px;height:36px;border-radius:11px;background:rgba(182,154,104,.12);display:grid;place-items:center;color:var(--gold-l);flex:none}
+.row .ri svg{width:19px;height:19px}
+.row .rt{flex:1;min-width:0}
+.row .rt b{display:block;font-weight:500;font-size:15px}
+.row .rt span{display:block;font-size:12.8px;color:var(--muted);margin-top:1px}
+.row .rv{color:var(--muted);font-size:13.5px;white-space:nowrap}
+.row.danger .rt b,.row.danger .ri{color:var(--danger)}
+.row.danger .ri{background:rgba(229,118,126,.12)}
+.acct{display:flex;align-items:center;gap:14px;padding:18px 16px}
+.avatar{width:52px;height:52px;border-radius:26px;background:linear-gradient(160deg,#6A3C84,#4B285F);display:grid;place-items:center;font-size:21px;font-weight:600;color:var(--gold-l);overflow:hidden;flex:none;border:1.5px solid rgba(182,154,104,.45)}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.acct .rt b{font-size:16.5px;font-weight:600}
+.acct-actions{padding:0 16px 16px}
+.toggle{width:46px;height:28px;border-radius:14px;background:rgba(255,255,255,.14);position:relative;flex:none;transition:background .15s}
+.toggle::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:11px;background:#E8DFEC;transition:transform .15s}
+.toggle.on{background:var(--gold)}
+.toggle.on::after{transform:translateX(18px);background:#fff}
+.bar{height:6px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#C7AD7C,#B69A68);transition:width .2s}
+.foot{text-align:center;color:var(--dim);font-size:12px;padding:26px 16px 40px}
+
+/* ---------- info ---------- */
+.info-hero{text-align:center;padding:10px 24px 6px}
+.info-hero .emblem{width:58px;height:58px}
+.info-hero p{color:var(--muted);margin-top:8px;font-size:14px}
+.help{margin:12px 16px 0;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px}
+.help h3{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:600;margin-bottom:8px}
+.help h3 svg{color:var(--gold)}
+.help ul{padding-left:18px;color:#DCD0E3;font-size:14px}
+.help li{margin:6px 0}
+.help li b{color:var(--gold-l);font-weight:600}
+
+/* ---------- notices ---------- */
+.notice{margin:10px 16px 0;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:15px 16px;display:flex;gap:13px}
+.notice.unread{border-color:rgba(182,154,104,.5);background:linear-gradient(180deg,#2C1838,#25132F)}
+.notice .ri{width:38px;height:38px;border-radius:12px;background:rgba(182,154,104,.13);display:grid;place-items:center;color:var(--gold-l);flex:none}
+.notice .nt{flex:1;min-width:0}
+.notice b{display:block;font-weight:600;font-size:15px}
+.notice p{color:#D8CCDF;font-size:14px;margin-top:3px;white-space:pre-wrap;word-wrap:break-word;user-select:text;-webkit-user-select:text}
+.notice time{display:block;color:var(--dim);font-size:12px;margin-top:6px}
+.notice .btn{margin-top:12px}
+
+/* ---------- viewer ---------- */
+#viewer{position:fixed;inset:0;z-index:60;background:#000;display:flex;flex-direction:column;animation:fadeIn .18s}
+@keyframes fadeIn{from{opacity:0}}
+.vstage{position:absolute;inset:0;overflow:hidden;touch-action:none}
+.vslide{position:absolute;inset:0;display:grid;place-items:center;will-change:transform}
+.vslide img.main{max-width:100%;max-height:100%;object-fit:contain;transform-origin:0 0;will-change:transform}
+.vslide video{width:100%;height:100%;object-fit:contain;background:#000}
+.vslide .blur{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;filter:blur(14px) brightness(.6);transform:scale(1.05)}
+.vload{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:12px;color:#eee;font-size:14px;text-align:center;padding:20px}
+.vload .spin{width:34px;height:34px;border-width:3px}
+.vtop,.vbottom{position:absolute;left:0;right:0;z-index:3;transition:opacity .18s,transform .18s}
+.vtop{top:0;display:flex;align-items:center;gap:4px;padding:8px 6px;background:linear-gradient(rgba(0,0,0,.65),transparent)}
+.vtop .vt{flex:1;min-width:0;padding-left:2px}
+.vtop .vt b{display:block;font-size:15.5px;font-weight:600}
+.vtop .vt span{display:block;font-size:12px;color:#cfc3d6}
+.vtop .ib,.vbottom button{color:#fff}
+.vbottom{bottom:0;display:flex;justify-content:space-around;padding:14px 6px 16px;background:linear-gradient(transparent,rgba(0,0,0,.7))}
+.vbottom button{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11.5px;min-width:64px;padding:4px}
+.vbottom button svg{color:var(--gold-l)}
+.vbottom button.danger svg{color:var(--danger)}
+#viewer.bare .vtop{opacity:0;transform:translateY(-10px);pointer-events:none}
+#viewer.bare .vbottom{opacity:0;transform:translateY(10px);pointer-events:none}
+#viewer.video .vbottom{bottom:64px;background:none}
+
+/* ---------- sheets, dialogs, toast ---------- */
+.modal{position:fixed;inset:0;z-index:100;display:flex;align-items:flex-end;justify-content:center;background:rgba(8,3,12,.62);animation:fadeIn .15s}
+.modal.center{align-items:center;padding:24px}
+.sheet{width:100%;max-width:560px;background:var(--bg2);border-top:1px solid var(--line);border-radius:24px 24px 0 0;padding:8px 0 14px;max-height:82%;display:flex;flex-direction:column;animation:up .2s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:.4}}
+.sheet .handle{width:40px;height:4px;border-radius:2px;background:rgba(255,255,255,.18);margin:4px auto 8px}
+.sheet h3{font-size:16px;font-weight:600;padding:6px 22px 10px}
+.sheet .opts{overflow-y:auto}
+.opt{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:13px 22px;min-height:54px}
+.opt:active{background:rgba(255,255,255,.05)}
+.opt svg{color:var(--gold-l)}
+.opt .rt{flex:1}
+.opt .rt span{display:block;font-size:12.5px;color:var(--muted)}
+.opt.danger,.opt.danger svg{color:var(--danger)}
+.opt .ck{color:var(--gold)}
+.dialog{width:100%;max-width:400px;background:var(--bg2);border:1px solid var(--line);border-radius:24px;padding:22px 22px 14px;animation:pop .16s ease-out}
+@keyframes pop{from{transform:scale(.95);opacity:0}}
+.dialog .dic{width:48px;height:48px;border-radius:16px;display:grid;place-items:center;background:rgba(182,154,104,.13);color:var(--gold-l);margin-bottom:14px}
+.dialog .dic.danger{background:rgba(229,118,126,.13);color:var(--danger)}
+.dialog h3{font-size:18.5px;font-weight:600;margin-bottom:8px}
+.dialog p{color:#D8CCDF;font-size:14.5px;white-space:pre-line}
+.dialog input{width:100%;height:50px;border-radius:14px;border:1.5px solid var(--line);background:var(--card);padding:0 14px;margin-top:14px;outline:none;font-size:16px}
+.dialog input:focus{border-color:var(--gold)}
+.dbtns{display:flex;justify-content:flex-end;gap:6px;margin-top:18px}
+.dbtns button{height:44px;padding:0 16px;border-radius:22px;font-weight:600;color:var(--gold-l)}
+.dbtns button.primary{background:var(--gold);color:#2A1534}
+.dbtns button.danger{background:rgba(229,118,126,.16);color:var(--danger)}
+#toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);z-index:950;width:max-content;max-width:calc(100vw - 40px);background:#F1E7D6;color:#2A1534;border-radius:14px;padding:11px 16px;font-size:14px;font-weight:500;box-shadow:0 10px 30px rgba(0,0,0,.4);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;text-align:center}
+#toast.on{opacity:1;transform:translateX(-50%)}
+#progress{position:fixed;left:16px;right:16px;bottom:96px;z-index:40;background:var(--card2);border:1px solid var(--line);border-radius:16px;padding:12px 14px;box-shadow:0 10px 30px rgba(0,0,0,.4);display:none}
+#progress.on{display:block}
+#progress .pt{display:flex;align-items:center;gap:10px;font-size:13.5px}
+</style>
+</head>
+<body>
+
+<!-- Welcome / login -->
+<section id="welcome" class="screen">
+  <div class="wl-top">
+    <div class="emblem" data-emblem></div>
+    <h1 class="wordmark" data-appname>Vault</h1>
+    <p class="tag">Your private space for photos and videos</p>
+    <div class="wl-points">
+      <div data-i="lock">Locked with your own 4-digit PIN</div>
+      <div data-i="cloudCheck">Saved to your Google account</div>
+      <div data-i="eyeOff">Hidden from your Gallery</div>
+    </div>
+  </div>
+  <div class="wl-actions">
+    <button class="btn google" id="btnGoogle"></button>
+    <button class="btn ghost" id="btnGuest">Continue as guest</button>
+    <p class="fine">With Google, your photos and videos come back if you reinstall the app. As a guest they stay on this phone only and are lost if the app is uninstalled.</p>
+  </div>
+</section>
+
+<!-- PIN: create / confirm / unlock -->
+<section id="pin" class="screen">
+  <div class="pin-head">
+    <div class="emblem" data-emblem></div>
+    <h2 id="pinTitle">Enter your PIN</h2>
+    <p class="sub" id="pinSub"></p>
+    <div class="dots" id="dots"><i></i><i></i><i></i><i></i></div>
+    <p class="pin-msg" id="pinMsg"></p>
+  </div>
+  <div class="keypad" id="keypad"></div>
+  <div class="pin-foot">
+    <button class="link" id="pinForgot">Forgot PIN?</button>
+    <button class="link" id="pinCancel" hidden>Cancel</button>
+  </div>
+</section>
+
+<!-- Home -->
+<section id="home" class="screen">
+  <header class="top">
+    <div class="brand"><span class="emblem" data-emblem></span><span class="wordmark" data-appname>Vault</span></div>
+    <div class="top-actions">
+      <button class="ib" id="btnBell" aria-label="Notifications"><span data-i="bell"></span><span class="badge" id="bellBadge" hidden></span></button>
+      <button class="ib" id="btnInfo" aria-label="How to use" data-i="info"></button>
+      <button class="ib" id="btnSettings" aria-label="Settings" data-i="gear"></button>
+    </div>
+  </header>
+  <div class="tabs" id="tabs">
+    <button data-tab="all" class="on">Photos &amp; videos</button>
+    <button data-tab="albums">Albums</button>
+  </div>
+  <div class="statusrow">
+    <button class="chip" id="backupChip"></button>
+    <div class="filters" id="filters">
+      <button data-f="all" class="on">All</button><button data-f="photo">Photos</button><button data-f="video">Videos</button>
+    </div>
+  </div>
+  <main class="scroll" id="homeScroll">
+    <div id="gridAll"></div>
+    <div id="albumsView" hidden></div>
+    <div class="pad-bottom"></div>
+  </main>
+  <button class="fab" id="fab" aria-label="Add" data-i="plus"></button>
+</section>
+
+<div id="pages"></div>
+<div id="selLayer"></div>
+<div id="progress"><div class="pt"><span class="spin"></span><span id="progressText">Adding…</span></div><div class="bar"><i id="progressBar"></i></div></div>
+<div id="modals"></div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   Vault — screens. Talks to the Android side through window.VaultNative.
+   ===================================================================== */
+
+// ---------- icons ----------
+const IC = {
+  bell:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+  info:'<circle cx="12" cy="12" r="9.5"/><path d="M12 16.5v-5M12 7.8h.01"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  back:'<path d="M19 12H5M12 19l-7-7 7-7"/>',
+  x:'<path d="M18 6 6 18M6 6l12 12"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>',
+  trash:'<path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
+  share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/>',
+  download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
+  folderPlus:'<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><path d="M12 11v6M9 14h6"/>',
+  folder:'<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
+  image:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/>',
+  images:'<rect x="7" y="7" width="14" height="14" rx="2"/><path d="M17 3H5a2 2 0 0 0-2 2v12"/><circle cx="11.5" cy="11.5" r="1.3"/><path d="m21 17-4-4-7 7"/>',
+  film:'<rect x="2" y="5" width="14" height="14" rx="2"/><path d="m22 7-6 5 6 5z"/>',
+  play:'<path d="M7 4.5v15l12-7.5z" fill="currentColor" stroke="none"/>',
+  cloudCheck:'<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/><path d="m9.5 14.5 2 2 4-4"/>',
+  cloudUp:'<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/><path d="M12 17v-6M9.5 13.5 12 11l2.5 2.5"/>',
+  upload:'<path d="M12 19V6M6 12l6-6 6 6"/>',
+  phone:'<rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/>',
+  lock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  eyeOff:'<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24M1 1l22 22"/>',
+  more:'<circle cx="12" cy="5" r="1.3" fill="currentColor"/><circle cx="12" cy="12" r="1.3" fill="currentColor"/><circle cx="12" cy="19" r="1.3" fill="currentColor"/>',
+  refresh:'<path d="M21 4v6h-6M3 20v-6h6"/><path d="M5.6 9a7.5 7.5 0 0 1 12.4-2.8L21 10M3 14l3 3.8A7.5 7.5 0 0 0 18.4 15"/>',
+  restore:'<path d="M3 4v6h6"/><path d="M3.5 15a9 9 0 1 0 2.1-9.4L3 10"/>',
+  edit:'<path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  key:'<circle cx="7.5" cy="15.5" r="4.5"/><path d="m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3"/>',
+  shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  logout:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',
+  external:'<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/>',
+  alert:'<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/>',
+  wifi:'<path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/>',
+  storage:'<path d="M22 12H2M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><path d="M6 16h.01M10 16h.01"/>',
+  help:'<circle cx="12" cy="12" r="9.5"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/>',
+  update:'<circle cx="12" cy="12" r="9.5"/><path d="m16 12-4-4-4 4M12 16V8"/>',
+  message:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  del:'<path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><path d="m18 9-6 6M12 9l6 6"/>',
+  chevron:'<path d="m9 18 6-6-6-6"/>',
+  selectAll:'<path d="m9 11 3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+  minus:'<circle cx="12" cy="12" r="9.5"/><path d="M8 12h8"/>',
+  clock:'<circle cx="12" cy="12" r="9.5"/><path d="M12 6.5V12l3.5 2"/>',
+  user:'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  album:'<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 15.5 8 11l4 4 3-2.5 6 5"/><circle cx="15.5" cy="8.5" r="1.6"/>',
+  sparkle:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>'
+};
+const GOOGLE_G = '<svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
+const EMBLEM_SVG = '<svg viewBox="0 0 108 108"><defs><linearGradient id="eg@" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E6D3A8"/><stop offset=".55" stop-color="#B69A68"/><stop offset="1" stop-color="#94794A"/></linearGradient><radialGradient id="ebg@" cx=".5" cy=".35" r=".75"><stop offset="0" stop-color="#6A3C84"/><stop offset="1" stop-color="#3E2050"/></radialGradient></defs><circle cx="54" cy="54" r="52" fill="url(#ebg@)"/><circle cx="54" cy="54" r="22.5" fill="#2E173B"/><circle cx="54" cy="54" r="24" fill="none" stroke="url(#eg@)" stroke-width="3"/><path fill="none" stroke="url(#eg@)" stroke-width="1.8" stroke-linecap="round" d="M81.40,54.00 L84.20,54.00 M77.73,67.70 L80.15,69.10 M67.70,77.73 L69.10,80.15 M54.00,81.40 L54.00,84.20 M40.30,77.73 L38.90,80.15 M30.27,67.70 L27.85,69.10 M26.60,54.00 L23.80,54.00 M30.27,40.30 L27.85,38.90 M40.30,30.27 L38.90,27.85 M54.00,26.60 L54.00,23.80 M67.70,30.27 L69.10,27.85 M77.73,40.30 L80.15,38.90"/><path fill="#E2CFA4" d="M48.5,49 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 Z M51.3,52.2 L49.6,63.2 L58.4,63.2 L56.7,52.2 Z"/></svg>';
+let emblemSeq = 0;
+function emblem(){ const k = ++emblemSeq; return EMBLEM_SVG.replace(/@/g, k); }
+function icon(n, cls){ return '<svg class="i'+(cls?' '+cls:'')+'" viewBox="0 0 24 24">'+(IC[n]||'')+'</svg>'; }
+
+// ---------- native bridge ----------
+const N = window.VaultNative || window.__mockNative;
+const pending = {};
+let cbSeq = 0;
+window.__vaultCb = (id, data) => { const f = pending[id]; delete pending[id]; if (f) f(data || {}); };
+function call(method, ...args){ return new Promise(res => { const id = 'c' + (++cbSeq); pending[id] = res; N[method](id, ...args); }); }
+function J(s, fb){ try { return JSON.parse(s); } catch(e){ return fb; } }
+
+// ---------- state ----------
+const S = {
+  state:{}, lib:{items:[],albums:[]}, tab:'all', filter:'all', home:false, locked:true,
+  sel:{ctx:null, ids:new Set()}, pages:[], modals:[], sync:{state:'idle'}, notices:{items:[],unread:0},
+  pendingOpen:null, importing:null, downloads:{}, update:null
+};
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function el(html){ const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; }
+function appName(){ return S.state.appName || 'Vault'; }
+
+// ---------- formatting ----------
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function dayKey(t){ const d = new Date(t); return d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate(); }
+function dayLabel(t){
+  const d = new Date(t), now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  if (t >= start) return 'Today';
+  if (t >= start - 864e5) return 'Yesterday';
+  const s = DAYS[d.getDay()] + ', ' + d.getDate() + ' ' + MONTHS[d.getMonth()];
+  return d.getFullYear() === now.getFullYear() ? s : d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+}
+function timeLabel(t){ const d = new Date(t); let h = d.getHours(), m = d.getMinutes(); const ap = h < 12 ? 'am' : 'pm'; h = h % 12 || 12; return h + ':' + String(m).padStart(2,'0') + ' ' + ap; }
+function fullDate(t){ const d = new Date(t); return d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear()+', '+timeLabel(t); }
+function fmtSize(b){ if (!b) return '0 KB'; const u = ['B','KB','MB','GB','TB']; let i = 0; while (b >= 1024 && i < 4){ b /= 1024; i++; } return (i >= 2 ? b.toFixed(b < 10 ? 1 : 0) : Math.round(b)) + ' ' + u[i]; }
+function fmtDur(ms){ const s = Math.round((ms||0)/1000), h = Math.floor(s/3600), m = Math.floor(s%3600/60), x = s%60; return (h ? h+':'+String(m).padStart(2,'0') : m) + ':' + String(x).padStart(2,'0'); }
+function ago(t){ if (!t) return 'never'; const s = (Date.now()-t)/1000; if (s < 60) return 'just now'; if (s < 3600) return Math.floor(s/60)+' min ago'; if (s < 86400) return Math.floor(s/3600)+' h ago'; return dayLabel(t); }
+function plural(n, w){ return n + ' ' + w + (n === 1 ? '' : 's'); }
+function itemsWord(n){ return plural(n, 'item'); }
+
+// ---------- library helpers ----------
+function loadLib(){ S.lib = J(N.library(), {items:[],albums:[]}); S.byId = new Map(S.lib.items.map(i => [i.id, i])); }
+function liveItems(){ return S.lib.items.filter(i => !i.trashed).sort((a,b) => b.added - a.added); }
+function binItems(){ return S.lib.items.filter(i => i.trashed).sort((a,b) => b.trashed - a.trashed); }
+function albumItems(id){ return liveItems().filter(i => (i.albums||[]).includes(id)); }
+function albumById(id){ return S.lib.albums.find(a => a.id === id); }
+function sortedAlbums(){ return S.lib.albums.slice().sort((a,b) => (b.created||0) - (a.created||0)); }
+
+// ---------- toast & progress ----------
+let toastTimer;
+function toast(msg, ms){ const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), ms || 2600); }
+function showProgress(text, pct){ $('#progress').classList.add('on'); $('#progressText').textContent = text; $('#progressBar').style.width = (pct < 0 ? 100 : pct) + '%'; }
+function hideProgress(){ $('#progress').classList.remove('on'); }
+
+// ---------- modals: dialogs and sheets ----------
+function openModal(node, center, onClose){
+  const m = el('<div class="modal'+(center?' center':'')+'"></div>');
+  m.appendChild(node);
+  const entry = {m, onClose};
+  m.addEventListener('click', e => { if (e.target === m) closeModal(entry); });
+  $('#modals').appendChild(m);
+  S.modals.push(entry);
+  return entry;
+}
+function closeModal(entry, val){
+  entry = entry || S.modals[S.modals.length-1];
+  if (!entry) return;
+  const i = S.modals.indexOf(entry);
+  if (i >= 0) S.modals.splice(i, 1);
+  entry.m.remove();
+  if (entry.onClose) entry.onClose(val);
+}
+function dialog(o){
+  return new Promise(res => {
+    const d = el('<div class="dialog">' +
+      (o.icon ? '<div class="dic'+(o.danger?' danger':'')+'">'+icon(o.icon)+'</div>' : '') +
+      '<h3>'+esc(o.title)+'</h3>' + (o.body ? '<p>'+esc(o.body)+'</p>' : '') +
+      (o.input != null ? '<input maxlength="60" value="'+esc(o.input)+'" placeholder="'+esc(o.placeholder||'')+'">' : '') +
+      '<div class="dbtns">' + (o.cancel === false ? '' : '<button data-b="no">'+esc(o.cancel||'Cancel')+'</button>') +
+      '<button data-b="yes" class="'+(o.danger?'danger':'primary')+'">'+esc(o.ok||'OK')+'</button></div></div>');
+    let done = false;
+    const entry = openModal(d, true, v => { if (!done){ done = true; res(v === undefined ? false : v); } });
+    const inp = d.querySelector('input');
+    const ok = () => closeModal(entry, inp ? inp.value.trim() || false : true);
+    d.querySelector('[data-b=yes]').onclick = ok;
+    const no = d.querySelector('[data-b=no]'); if (no) no.onclick = () => closeModal(entry, false);
+    if (inp){ setTimeout(() => { inp.focus(); inp.select(); }, 60); inp.addEventListener('keydown', e => { if (e.key === 'Enter') ok(); }); }
+  });
+}
+function sheet(title, opts){
+  return new Promise(res => {
+    const s = el('<div class="sheet"><div class="handle"></div>'+(title?'<h3>'+esc(title)+'</h3>':'')+'<div class="opts"></div></div>');
+    const box = s.querySelector('.opts');
+    let done = false;
+    const entry = openModal(s, false, v => { if (!done){ done = true; res(v === undefined ? null : v); } });
+    opts.forEach((o, i) => {
+      const b = el('<button class="opt'+(o.danger?' danger':'')+'">'+icon(o.icon||'chevron')+'<div class="rt">'+esc(o.label)+(o.sub?'<span>'+esc(o.sub)+'</span>':'')+'</div>'+(o.checked?icon('check','ck'):'')+'</button>');
+      b.onclick = () => closeModal(entry, o.value !== undefined ? o.value : i);
+      box.appendChild(b);
+    });
+  });
+}
+
+// ---------- welcome ----------
+function initWelcome(){
+  $('#btnGoogle').innerHTML = GOOGLE_G + '<span>Continue with Google</span>';
+  $('#btnGoogle').onclick = async () => {
+    const b = $('#btnGoogle'); b.disabled = true;
+    const r = await call('signIn');
+    b.disabled = false;
+    if (r.ok){ refreshState(); toast('Signed in as ' + r.email); startPin('create'); }
+    else if (!r.cancelled) dialog({icon:'alert', title:'Couldn\'t sign in', body:r.error || 'Please try again.', cancel:false});
+  };
+  $('#btnGuest').onclick = async () => {
+    const ok = await dialog({icon:'phone', title:'Continue as guest?',
+      body:'Your photos and videos will be kept only on this phone.\n\nIf you uninstall the app or clear its data, everything in a guest vault is deleted for good. You can switch to Google backup later in Settings.',
+      ok:'Continue as guest'});
+    if (!ok) return;
+    N.continueAsGuest(); refreshState(); startPin('create');
+  };
+}
+
+// ---------- PIN ----------
+const P = { mode:'unlock', entry:'', first:'', after:null, waitTimer:null };
+function initPin(){
+  const kp = $('#keypad');
+  const keys = ['1','2','3','4','5','6','7','8','9','', '0', 'del'];
+  kp.innerHTML = keys.map(k => k === '' ? '<span></span>' : k === 'del' ? '<button class="key fn" data-k="del" aria-label="Delete">'+icon('del')+'</button>' : '<button class="key" data-k="'+k+'">'+k+'</button>').join('');
+  kp.addEventListener('click', e => { const b = e.target.closest('[data-k]'); if (b) pinKey(b.dataset.k); });
+  $('#pinForgot').onclick = forgotPin;
+  $('#pinCancel').onclick = () => { $('#pin').classList.remove('on'); P.mode = 'unlock'; };
+  document.addEventListener('keydown', e => { if ($('#pin').classList.contains('on') && !S.modals.length){ if (/^[0-9]$/.test(e.key)) pinKey(e.key); else if (e.key === 'Backspace') pinKey('del'); } });
+}
+function startPin(mode, after){
+  P.mode = mode; P.entry = ''; P.after = after || null;
+  if (mode === 'create') P.first = '';
+  const t = { create:['Create a PIN','Choose 4 digits to lock your vault'], confirm:['Confirm your PIN','Enter the same 4 digits again'],
+              unlock:['Enter your PIN', S.state.email ? S.state.email : (S.state.mode === 'guest' ? 'Guest vault' : '')], verify:['Enter current PIN','To change your PIN'] }[mode];
+  $('#pinTitle').textContent = t[0]; $('#pinSub').textContent = t[1]; $('#pinMsg').textContent = '';
+  $('#pinForgot').hidden = mode !== 'unlock';
+  $('#pinCancel').hidden = !(mode === 'verify' || (P.after && P.after.cancel));
+  drawDots();
+  $('#pin').classList.add('on');
+  if (!S.home){ document.querySelectorAll('.screen').forEach(s => { if (s.id !== 'pin') s.classList.remove('on'); }); }
+  checkWait();
+}
+function drawDots(){ $('#dots').querySelectorAll('i').forEach((d, i) => d.classList.toggle('on', i < P.entry.length)); }
+function pinError(msg){ const d = $('#dots'); d.classList.remove('shake'); void d.offsetWidth; d.classList.add('shake'); $('#pinMsg').textContent = msg; try { navigator.vibrate && navigator.vibrate(60); } catch(e){} P.entry = ''; setTimeout(drawDots, 380); }
+function pinKey(k){
+  if ($('#keypad').classList.contains('wait')) return;
+  if (k === 'del'){ P.entry = P.entry.slice(0, -1); drawDots(); return; }
+  if (P.entry.length >= 4) return;
+  P.entry += k; drawDots(); $('#pinMsg').textContent = '';
+  if (P.entry.length === 4) setTimeout(pinDone, 120);
+}
+function pinDone(){
+  const pin = P.entry;
+  if (P.mode === 'create'){ P.first = pin; P.mode = 'confirm'; P.entry = ''; $('#pinTitle').textContent = 'Confirm your PIN'; $('#pinSub').textContent = 'Enter the same 4 digits again'; drawDots(); return; }
+  if (P.mode === 'confirm'){
+    if (pin !== P.first){ P.mode = 'create'; P.first = ''; $('#pinTitle').textContent = 'Create a PIN'; $('#pinSub').textContent = 'Choose 4 digits to lock your vault'; pinError('The PINs didn\'t match. Try again.'); return; }
+    const r = J(N.setPin(pin), {});
+    if (!r.ok){ pinError(r.error || 'Couldn\'t save the PIN'); return; }
+    refreshState();
+    const after = P.after; P.after = null;
+    if (after && after.done) { $('#pin').classList.remove('on'); after.done(); }
+    else unlocked(true);
+    return;
+  }
+  // unlock / verify
+  const r = J(N.checkPin(pin), {});
+  if (r.ok){
+    if (P.mode === 'verify'){ startPin('create', {done:() => toast('PIN changed'), cancel:true}); return; }
+    unlocked(false); return;
+  }
+  if (r.wait > 0){ P.entry = ''; drawDots(); checkWait(r.wait); return; }
+  pinError(r.left > 0 ? 'Wrong PIN. ' + r.left + (r.left === 1 ? ' try' : ' tries') + ' left before a short wait.' : 'Wrong PIN.');
+}
+function checkWait(sec){
+  clearInterval(P.waitTimer);
+  if (!sec) return;
+  const kp = $('#keypad'); let left = sec;
+  const tick = () => { if (left <= 0){ clearInterval(P.waitTimer); kp.classList.remove('wait'); $('#pinMsg').textContent = ''; return; }
+    kp.classList.add('wait'); $('#pinMsg').textContent = 'Too many wrong tries. Try again in ' + (left >= 60 ? Math.ceil(left/60) + ' min' : left + ' s') + '.'; left--; };
+  tick(); P.waitTimer = setInterval(tick, 1000);
+}
+async function forgotPin(){
+  const ok = await dialog({icon:'key', title:'Forgot your PIN?', body:'Confirm it\'s you with your phone\'s screen lock (fingerprint, pattern or phone PIN). Then you can choose a new PIN for ' + appName() + '.', ok:'Continue'});
+  if (!ok) return;
+  const r = await call('verifyOwner');
+  if (r.ok){ startPin('create', {done:() => { toast('New PIN set'); unlocked(false); }}); return; }
+  if (r.noLock){
+    const reset = await dialog({icon:'alert', danger:true, title:'Can\'t confirm it\'s you', body:'This phone has no screen lock, so ' + appName() + ' can\'t check who you are.\n\nThe only option is to reset the vault. Everything in this guest vault will be deleted.', ok:'Reset vault'});
+    if (reset){ const sure = await dialog({title:'Delete everything?', body:'This can\'t be undone.', ok:'Delete everything', danger:true}); if (sure){ await call('resetApp'); location.reload(); } }
+    return;
+  }
+  if (r.error) toast(r.error, 4000);
+}
+function unlocked(firstTime){
+  S.locked = false;
+  $('#pin').classList.remove('on');
+  enterHome();
+  if (firstTime && !S.state.notifAsked){ N.setSetting('notifAsked', 'true'); setTimeout(() => N.requestNotifications(), 700); }
+}
+
+// ---------- home ----------
+function enterHome(){
+  if (!S.home){ S.home = true; loadLib(); renderHome(); }
+  $('#home').classList.add('on'); $('#welcome').classList.remove('on');
+  refreshSync(); refreshNotices(true);
+  const open = S.pendingOpen || N.takeOpen(); S.pendingOpen = null;
+  if (open === 'notices') openNotices();
+}
+function renderHome(){
+  $('#tabs').querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.tab === S.tab));
+  $('#filters').hidden = S.tab !== 'all';
+  $('#gridAll').hidden = S.tab !== 'all';
+  $('#albumsView').hidden = S.tab !== 'albums';
+  $('#fab').setAttribute('aria-label', S.tab === 'all' ? 'Add photos and videos' : 'New album');
+  if (S.tab === 'all') renderAll(); else renderAlbums();
+  renderChip();
+}
+function renderAll(){
+  let items = liveItems();
+  if (S.filter !== 'all') items = items.filter(i => i.type === S.filter);
+  const box = $('#gridAll');
+  if (!items.length){
+    box.innerHTML = S.filter === 'all'
+      ? '<div class="empty"><div class="ring">'+icon('images')+'</div><b>Your vault is empty</b><p>Tap <span class="gold">+</span> to add photos and videos. They\'ll be kept private and hidden from your Gallery.</p><button class="btn gold" data-act="add">'+icon('plus')+'Add photos &amp; videos</button></div>'
+      : '<div class="empty"><div class="ring">'+icon(S.filter === 'video' ? 'film' : 'image')+'</div><b>No '+(S.filter === 'video' ? 'videos' : 'photos')+' yet</b></div>';
+    const b = box.querySelector('[data-act=add]'); if (b) b.onclick = addFromPhone;
+    return;
+  }
+  box.innerHTML = gridHTML(items, {groups:true});
+  markSel(box, 'home');
+}
+function gridHTML(items, o){
+  let html = '', last = null;
+  const cloud = S.state.mode === 'google';
+  for (const it of items){
+    if (o.groups){ const k = dayKey(it.added); if (k !== last){ if (last !== null) html += '</div>'; html += '<h3 class="gh">'+dayLabel(it.added)+'</h3><div class="grid">'; last = k; } }
+    html += '<div class="tile" data-id="'+esc(it.id)+'">' +
+      (it.thumb ? '<img src="'+esc(it.thumb)+'" loading="lazy" decoding="async" alt="">' : '<div class="ph">'+icon(it.type === 'video' ? 'film' : 'image')+'</div>') +
+      (it.type === 'video' ? '<span class="dur">'+icon('play')+fmtDur(it.dur)+'</span>' : '') +
+      (o.bin ? '<span class="days">'+daysLeft(it)+'</span>' : '') +
+      (cloud && !it.backedUp && !o.bin ? '<span class="up">'+icon('upload')+'</span>' : '') +
+      '<span class="chk">'+icon('check')+'</span></div>';
+  }
+  if (o.groups) html += '</div>'; else html = '<div class="grid" style="padding-top:4px">' + html + '</div>';
+  return html;
+}
+function daysLeft(it){ const d = Math.max(0, Math.ceil((it.trashed + 30*864e5 - Date.now()) / 864e5)); return d === 1 ? '1 day' : d + ' days'; }
+function renderAlbums(){
+  const box = $('#albumsView');
+  const bin = binItems().length;
+  let html = '<div class="albums"><button class="acard new" data-new><div class="acover">'+icon('folderPlus')+'</div><b>New album</b><span>&nbsp;</span></button>';
+  for (const a of sortedAlbums()){
+    const its = albumItems(a.id), cover = its.find(i => i.thumb);
+    html += '<button class="acard" data-album="'+esc(a.id)+'"><div class="acover">'+(cover ? '<img src="'+esc(cover.thumb)+'" loading="lazy" alt="">' : icon('album'))+'</div><b>'+esc(a.name)+'</b><span>'+itemsWord(its.length)+'</span></button>';
+  }
+  if (bin) html += '<button class="acard bin" data-bin><div class="acover">'+icon('trash')+'</div><b>Recently deleted</b><span>'+itemsWord(bin)+'</span></button>';
+  html += '</div>';
+  if (!S.lib.albums.length) html += '<p class="fine" style="padding:6px 30px">Albums help you sort your vault — for example Family, Documents or Trips. A photo can be in more than one album.</p>';
+  box.innerHTML = html;
+}
+function initHome(){
+  $('#tabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (!b) return; endSelect(); S.tab = b.dataset.tab; renderHome(); $('#homeScroll').scrollTop = 0; });
+  $('#filters').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if (!b) return; S.filter = b.dataset.f; $('#filters').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); renderAll(); });
+  $('#albumsView').addEventListener('click', e => {
+    const a = e.target.closest('[data-album]'); if (a) return openAlbum(a.dataset.album);
+    if (e.target.closest('[data-new]')) return newAlbum();
+    if (e.target.closest('[data-bin]')) return openBin();
+  });
+  $('#fab').onclick = () => S.tab === 'all' ? addFromPhone() : newAlbum();
+  $('#btnSettings').onclick = openSettings;
+  $('#btnInfo').onclick = openInfo;
+  $('#btnBell').onclick = openNotices;
+  $('#backupChip').onclick = chipTap;
+  bindGrid($('#gridAll'), 'home', () => { let l = liveItems(); if (S.filter !== 'all') l = l.filter(i => i.type === S.filter); return l; });
+}
+
+// ---------- backup chip ----------
+function renderChip(){
+  const c = $('#backupChip'); c.classList.remove('warn');
+  if (S.state.mode !== 'google'){ c.innerHTML = icon('phone') + '<span>Guest · this phone only</span>'; return; }
+  const s = S.sync || {};
+  const waiting = (s.total || 0) - (s.backedUp || 0);
+  let ic = icon('cloudCheck'), txt = 'Backed up';
+  if (s.state === 'running'){ ic = '<span class="spin"></span>'; txt = s.msg || 'Backing up…'; }
+  else if (s.state === 'signin'){ ic = icon('alert'); txt = 'Backup paused · tap to reconnect'; c.classList.add('warn'); }
+  else if (s.state === 'error'){ ic = icon('alert'); txt = 'Backup problem · tap for details'; c.classList.add('warn'); }
+  else if (s.state === 'wifi'){ ic = icon('wifi'); txt = 'Waiting for Wi-Fi · ' + waiting + ' to back up'; }
+  else if (waiting > 0){ ic = icon('cloudUp'); txt = waiting + ' waiting to back up'; }
+  c.innerHTML = ic + '<span>' + esc(txt) + '</span>';
+}
+async function chipTap(){
+  if (S.state.mode !== 'google') return openSettings();
+  const s = S.sync || {};
+  if (s.state === 'signin'){ const r = await call('reconnect'); if (r.ok) toast('Reconnected. Backing up…'); else if (!r.cancelled) toast(r.error || 'Couldn\'t reconnect', 4000); return; }
+  if (s.state === 'error'){ const again = await dialog({icon:'alert', title:'Backup problem', body:s.msg || 'Something went wrong.', ok:'Try again'}); if (again) N.syncNow(); return; }
+  const total = s.total || 0, done = s.backedUp || 0;
+  toast(done >= total ? 'All ' + itemsWord(total) + ' are backed up to ' + S.state.email : done + ' of ' + total + ' backed up. Keep the app open on Wi-Fi to finish faster.', 3500);
+  N.syncNow();
+}
+function refreshSync(){ S.sync = J(N.syncStatus(), {}); renderChip(); }
+
+// ---------- grid interaction (tap, long-press, select) ----------
+function bindGrid(box, ctx, getList){
+  let timer = null, long = false, sx = 0, sy = 0, tile = null;
+  const cancel = () => { clearTimeout(timer); timer = null; };
+  box.addEventListener('pointerdown', e => {
+    tile = e.target.closest('.tile'); if (!tile) return;
+    long = false; sx = e.clientX; sy = e.clientY; cancel();
+    timer = setTimeout(() => { timer = null; long = true; onLongPress(ctx, tile.dataset.id); }, 430);
+  });
+  box.addEventListener('pointermove', e => { if (timer && (Math.abs(e.clientX-sx) > 10 || Math.abs(e.clientY-sy) > 10)) cancel(); });
+  box.addEventListener('pointerup', e => {
+    if (long){ long = false; return; }
+    if (!timer) return; cancel();
+    const t = e.target.closest('.tile'); if (t && t === tile) onTap(ctx, t.dataset.id, getList);
+  });
+  box.addEventListener('pointercancel', cancel);
+  box.addEventListener('contextmenu', e => e.preventDefault());
+}
+function onTap(ctx, id, getList){
+  if (ctx === 'pickvault' || (S.sel.ctx === ctx && S.sel.ids.size)){ toggleSel(ctx, id); return; }
+  const list = getList(); const i = list.findIndex(x => x.id === id);
+  if (i >= 0) openViewer(list, i, ctx);
+}
+function onLongPress(ctx, id){
+  try { navigator.vibrate && navigator.vibrate(25); } catch(e){}
+  if (ctx === 'pickvault') return toggleSel(ctx, id);
+  if (S.sel.ctx !== ctx){ S.sel = {ctx, ids:new Set()}; }
+  toggleSel(ctx, id, true);
+}
+function toggleSel(ctx, id, forceOn){
+  if (S.sel.ctx !== ctx) S.sel = {ctx, ids:new Set()};
+  if (S.sel.ids.has(id) && !forceOn) S.sel.ids.delete(id); else S.sel.ids.add(id);
+  if (!S.sel.ids.size && ctx !== 'pickvault'){ endSelect(); return; }
+  updateSel();
+}
+function selBox(){ const ctx = S.sel.ctx; if (ctx === 'home') return $('#gridAll'); const p = S.pages[S.pages.length-1]; return p ? p.el.querySelector('.gridbox') : null; }
+function markSel(box, ctx){
+  if (!box) return;
+  const mine = S.sel.ctx === ctx;
+  const on = mine && (S.sel.ids.size > 0 || ctx === 'pickvault');
+  const holder = box.closest('.screen,.page'); if (holder) holder.classList.toggle('selecting', on);
+  box.querySelectorAll('.tile').forEach(t => t.classList.toggle('sel', mine && S.sel.ids.has(t.dataset.id)));
+}
+function updateSel(){
+  const ctx = S.sel.ctx, box = selBox();
+  markSel(box, ctx);
+  if (ctx === 'pickvault'){ const p = S.pages[S.pages.length-1]; if (p && p.onSel) p.onSel(); return; }
+  const layer = $('#selLayer'); layer.innerHTML = '';
+  if (!S.sel.ids.size) return;
+  const n = S.sel.ids.size;
+  const top = el('<div class="seltop"><button class="ib" data-a="close">'+icon('x')+'</button><b>'+n+' selected</b><button class="ib" data-a="all" aria-label="Select all">'+icon('selectAll')+'</button></div>');
+  const acts = ctx === 'bin'
+    ? [['restore','restore','Restore'],['forever','trash','Delete forever','danger']]
+    : [['album','folderPlus','Add to album'], ...(ctx.startsWith('album:') ? [['remove','minus','Remove']] : []), ['share','share','Share'], ...(S.state.sdk >= 29 ? [['save','download','Save']] : []), ['delete','trash','Delete','danger']];
+  const bar = el('<nav class="selbar">'+acts.map(a => '<button data-a="'+a[0]+'" class="'+(a[3]||'')+'">'+icon(a[1])+'<span>'+a[2]+'</span></button>').join('')+'</nav>');
+  const holder = ctx === 'home' ? $('#home') : S.pages[S.pages.length-1].el;
+  layer.appendChild(top); layer.appendChild(bar);
+  // place over the right screen
+  top.style.position = bar.style.position = 'fixed'; top.style.zIndex = bar.style.zIndex = 45;
+  layer.onclick = e => { const b = e.target.closest('[data-a]'); if (b) selAction(b.dataset.a); };
+  holder.classList.add('selecting');
+}
+function endSelect(){
+  const box = selBox();
+  S.sel = {ctx:null, ids:new Set()};
+  $('#selLayer').innerHTML = '';
+  document.querySelectorAll('.selecting').forEach(x => x.classList.remove('selecting'));
+  if (box) box.querySelectorAll('.tile.sel').forEach(t => t.classList.remove('sel'));
+}
+async function selAction(a){
+  const ids = [...S.sel.ids], ctx = S.sel.ctx;
+  if (a === 'close') return endSelect();
+  if (a === 'all'){
+    let list;
+    if (ctx === 'home'){ list = liveItems(); if (S.filter !== 'all') list = list.filter(i => i.type === S.filter); }
+    else if (ctx === 'bin') list = binItems();
+    else list = albumItems(ctx.slice(6));
+    const all = list.every(i => S.sel.ids.has(i.id));
+    S.sel.ids = all ? new Set() : new Set(list.map(i => i.id));
+    if (!S.sel.ids.size) return endSelect();
+    return updateSel();
+  }
+  const done = await itemAction(a, ids, ctx);
+  if (done) endSelect();
+}
+
+// ---------- actions on items (from selection or viewer) ----------
+async function itemAction(a, ids, ctx){
+  const n = ids.length;
+  if (a === 'album') return pickAlbumFor(ids);
+  if (a === 'remove'){ const aid = ctx.slice(6); N.removeFromAlbum(aid, JSON.stringify(ids)); libChanged(); toast(itemsWord(n) + ' removed from album'); return true; }
+  if (a === 'share'){ if (!(await ensureLocalAll(ids))) return false; const r = await call('share', JSON.stringify(ids)); if (!r.ok) toast(r.error || 'Couldn\'t share'); return true; }
+  if (a === 'save'){ if (!(await ensureLocalAll(ids))) return false; showProgress('Saving to Gallery…', -1); const r = await call('saveToGallery', JSON.stringify(ids)); hideProgress(); toast(r.ok ? 'Saved ' + itemsWord(r.saved) + ' to your Gallery (' + appName() + ' folder)' : (r.error || 'Couldn\'t save'), 3500); return true; }
+  if (a === 'delete'){
+    const ok = await dialog({icon:'trash', title:'Delete ' + (n === 1 ? 'this item' : itemsWord(n)) + '?', body:'It will move to Recently deleted. You can restore it from there for 30 days.', ok:'Delete', danger:true});
+    if (!ok) return false;
+    N.trash(JSON.stringify(ids)); libChanged(); toast(itemsWord(n) + ' moved to Recently deleted'); return true;
+  }
+  if (a === 'restore'){ N.restore(JSON.stringify(ids)); libChanged(); toast(itemsWord(n) + ' restored'); return true; }
+  if (a === 'forever'){
+    const ok = await dialog({icon:'alert', danger:true, title:'Delete forever?', body:(n === 1 ? 'This item' : itemsWord(n)) + ' will be removed from this phone' + (S.state.mode === 'google' ? ' and from your Google backup' : '') + '. This can\'t be undone.', ok:'Delete forever'});
+    if (!ok) return false;
+    N.deleteForever(JSON.stringify(ids)); libChanged(); toast(itemsWord(n) + ' deleted'); return true;
+  }
+  return false;
+}
+async function ensureLocalAll(ids){
+  const missing = ids.filter(id => { const it = S.byId.get(id); return it && !it.local; });
+  for (let k = 0; k < missing.length; k++){
+    showProgress('Getting ' + (k+1) + ' of ' + missing.length + ' from Google Drive…', -1);
+    const r = await call('ensureLocal', missing[k]);
+    if (!r.ok){ hideProgress(); toast(r.error || 'Couldn\'t download', 4000); return false; }
+  }
+  hideProgress();
+  if (missing.length) loadLib();
+  return true;
+}
+async function pickAlbumFor(ids){
+  const albums = sortedAlbums();
+  const opts = [{icon:'folderPlus', label:'New album', value:'__new'}].concat(albums.map(a => ({icon:'album', label:a.name, sub:itemsWord(albumItems(a.id).length), value:a.id})));
+  let id = await sheet('Add ' + itemsWord(ids.length) + ' to album', opts);
+  if (id == null) return false;
+  if (id === '__new'){
+    const name = await dialog({title:'New album', input:'', placeholder:'Album name', ok:'Create'});
+    if (!name) return false;
+    const a = J(N.createAlbum(name), {}); if (!a.id) return false; id = a.id;
+  }
+  N.addToAlbum(id, JSON.stringify(ids)); libChanged();
+  const al = albumById(id); toast('Added to ' + (al ? al.name : 'album'));
+  return true;
+}
+async function newAlbum(){
+  const name = await dialog({title:'New album', input:'', placeholder:'Album name, e.g. Family', ok:'Create'});
+  if (!name) return;
+  const a = J(N.createAlbum(name), {}); if (!a.id) return;
+  libChanged(); openAlbum(a.id);
+}
+async function addFromPhone(albumId){
+  const r = await call('pick', typeof albumId === 'string' ? albumId : '');
+  if (!r.ok){ toast(r.error || 'Couldn\'t add', 3500); return; }
+  if (r.added) toast('Added ' + itemsWord(r.added) + (r.failed ? ' (' + r.failed + ' couldn\'t be added)' : '') + '. You can now delete the originals from your Gallery if you like.', 4500);
+  else if (r.failed) toast(r.error || 'Couldn\'t add those files', 4000);
+}
+
+// ---------- pages (album, bin, settings, info, notices, pick from vault) ----------
+function openPage(name, html, opts){
+  const p = el('<div class="page" data-page="'+name+'">'+html+'</div>');
+  $('#pages').appendChild(p);
+  const entry = Object.assign({name, el:p}, opts || {});
+  S.pages.push(entry);
+  p.addEventListener('click', e => { if (e.target.closest('[data-back]')) closePage(entry); });
+  return entry;
+}
+function closePage(entry){
+  entry = entry || S.pages[S.pages.length-1]; if (!entry) return;
+  if (S.sel.ctx && S.sel.ctx !== 'home') endSelect();
+  const i = S.pages.indexOf(entry); if (i >= 0) S.pages.splice(i, 1);
+  entry.el.classList.add('out'); setTimeout(() => entry.el.remove(), 180);
+  if (entry.onClose) entry.onClose();
+}
+function topPage(name){ const p = S.pages[S.pages.length-1]; return p && p.name === name ? p : null; }
+function head(title, sub, right){ return '<header class="ph-head"><button class="ib" data-back aria-label="Back">'+icon('back')+'</button><h1>'+esc(title)+(sub?'<small>'+esc(sub)+'</small>':'')+'</h1>'+(right||'')+'</header>'; }
+
+function openAlbum(id){
+  const p = openPage('album', '<div class="hd"></div><main class="scroll"><div class="gridbox"></div><div class="pad-bottom"></div></main><button class="fab" aria-label="Add">'+icon('plus')+'</button>', {albumId:id});
+  p.render = () => {
+    const a = albumById(id); if (!a){ closePage(p); return; }
+    const its = albumItems(id);
+    p.el.querySelector('.hd').innerHTML = head(a.name, itemsWord(its.length), '<button class="ib" data-menu aria-label="Album options">'+icon('more')+'</button>');
+    const box = p.el.querySelector('.gridbox');
+    box.innerHTML = its.length ? gridHTML(its, {groups:false}) : '<div class="empty"><div class="ring">'+icon('album')+'</div><b>This album is empty</b><p>Add photos and videos from your phone, or pick ones already in your vault.</p><button class="btn gold" data-addto>'+icon('plus')+'Add to album</button></div>';
+    markSel(box, 'album:' + id);
+  };
+  p.render();
+  const box = p.el.querySelector('.gridbox');
+  bindGrid(box, 'album:' + id, () => albumItems(id));
+  const add = async () => {
+    const c = await sheet('Add to ' + (albumById(id) || {}).name, [{icon:'phone', label:'From this phone', sub:'Photos and videos in your Gallery', value:'phone'}, {icon:'images', label:'From your vault', sub:'Items already in ' + appName(), value:'vault'}]);
+    if (c === 'phone') addFromPhone(id); else if (c === 'vault') pickFromVault(id);
+  };
+  p.el.querySelector('.fab').onclick = add;
+  p.el.addEventListener('click', async e => {
+    if (e.target.closest('[data-addto]')) return add();
+    if (!e.target.closest('[data-menu]')) return;
+    const a = albumById(id);
+    const c = await sheet(a.name, [{icon:'edit', label:'Rename album', value:'rename'}, {icon:'trash', label:'Delete album', sub:'Photos and videos stay in your vault', value:'delete', danger:true}]);
+    if (c === 'rename'){ const name = await dialog({title:'Rename album', input:a.name, ok:'Save'}); if (name){ N.renameAlbum(id, name); libChanged(); } }
+    if (c === 'delete'){ const ok = await dialog({icon:'trash', danger:true, title:'Delete "' + a.name + '"?', body:'Only the album is deleted. Its photos and videos stay in your vault.', ok:'Delete album'}); if (ok){ N.deleteAlbum(id); closePage(p); libChanged(); } }
+  });
+}
+function pickFromVault(albumId){
+  const a = albumById(albumId);
+  const list = () => liveItems().filter(i => !(i.albums||[]).includes(albumId));
+  S.sel = {ctx:'pickvault', ids:new Set()};
+  const p = openPage('pickvault', '<header class="ph-head"><button class="ib" data-back>'+icon('x')+'</button><h1>Add to '+esc(a.name)+'<small>Tap to select</small></h1><button class="btn gold small" data-add disabled>Add</button></header><main class="scroll"><div class="gridbox"></div><div class="pad-bottom"></div></main>', {
+    onSel(){ const n = S.sel.ids.size, b = p.el.querySelector('[data-add]'); b.disabled = !n; b.textContent = n ? 'Add (' + n + ')' : 'Add'; },
+    onClose(){ if (S.sel.ctx === 'pickvault') S.sel = {ctx:null, ids:new Set()}; }
+  });
+  const box = p.el.querySelector('.gridbox');
+  const its = list();
+  box.innerHTML = its.length ? gridHTML(its, {groups:true}) : '<div class="empty"><b>Everything is already in this album</b></div>';
+  p.el.classList.add('selecting');
+  bindGrid(box, 'pickvault', list);
+  p.el.querySelector('[data-add]').onclick = () => { const ids = [...S.sel.ids]; N.addToAlbum(albumId, JSON.stringify(ids)); closePage(p); libChanged(); toast('Added ' + itemsWord(ids.length) + ' to ' + a.name); };
+}
+function openBin(){
+  const p = openPage('bin', '<div class="hd"></div><main class="scroll"><p class="fine" style="padding:0 20px 8px;text-align:left">Items are deleted for good after 30 days. Long-press to select.</p><div class="gridbox"></div><div class="pad-bottom"></div></main>');
+  p.render = () => {
+    const its = binItems();
+    p.el.querySelector('.hd').innerHTML = head('Recently deleted', itemsWord(its.length), its.length ? '<button class="btn small ghost" data-empty style="margin-right:6px">Empty</button>' : '');
+    const box = p.el.querySelector('.gridbox');
+    box.innerHTML = its.length ? gridHTML(its, {groups:false, bin:true}) : '<div class="empty"><div class="ring">'+icon('trash')+'</div><b>Nothing here</b><p>Deleted items stay here for 30 days.</p></div>';
+    markSel(box, 'bin');
+  };
+  p.render();
+  bindGrid(p.el.querySelector('.gridbox'), 'bin', binItems);
+  p.el.addEventListener('click', async e => {
+    if (!e.target.closest('[data-empty]')) return;
+    const n = binItems().length;
+    const ok = await dialog({icon:'alert', danger:true, title:'Empty Recently deleted?', body:itemsWord(n) + ' will be deleted for good' + (S.state.mode === 'google' ? ', including from your Google backup' : '') + '.', ok:'Delete forever'});
+    if (ok){ N.emptyBin(); libChanged(); toast('Recently deleted is empty'); }
+  });
+}
+
+// ---------- settings ----------
+function openSettings(){
+  if (topPage('settings')) return;
+  const p = openPage('settings', head('Settings') + '<main class="scroll" id="setBody"></main>');
+  p.render = () => renderSettings(p);
+  p.render();
+  p.el.addEventListener('click', e => { const b = e.target.closest('[data-s]'); if (b) settingAction(b.dataset.s, p); });
+}
+function row(key, ic, title, sub, right, cls){ return '<button class="row '+(cls||'')+'" data-s="'+key+'"><span class="ri">'+icon(ic)+'</span><span class="rt"><b>'+esc(title)+'</b>'+(sub?'<span>'+sub+'</span>':'')+'</span>'+(right||'')+'</button>'; }
+function toggle(on){ return '<span class="toggle'+(on?' on':'')+'"></span>'; }
+function renderSettings(p){
+  refreshState();
+  const st = S.state, sy = S.sync || {}, store = J(N.storage(), {});
+  const lockNames = {0:'Immediately', 30:'After 30 seconds', 60:'After 1 minute', 300:'After 5 minutes'};
+  const google = st.mode === 'google';
+  const initial = (st.name || st.email || 'G').trim().charAt(0).toUpperCase();
+  let h = '<div class="sec"><h4>Account</h4><div class="card">';
+  if (google){
+    h += '<div class="acct"><div class="avatar">'+(st.photo ? '<img src="'+esc(st.photo)+'" onerror="this.remove()" alt="">' : '')+esc(initial)+'</div><div class="rt"><b>'+esc(st.name || 'Google account')+'</b><span class="muted" style="font-size:13px;display:block">'+esc(st.email)+'</span></div></div>';
+    h += row('signout', 'logout', 'Sign out', 'Removes the vault from this phone. It stays safe in your Google account.');
+  } else {
+    h += '<div class="acct"><div class="avatar">'+icon('user')+'</div><div class="rt"><b>Guest</b><span class="muted" style="font-size:13px;display:block">Only on this phone</span></div></div>';
+    h += '<div class="acct-actions"><button class="btn gold" data-s="google">'+GOOGLE_G.replace('<svg','<svg style="width:20px;height:20px;background:#fff;border-radius:50%;padding:2px"')+'Back up with Google</button><p class="fine" style="margin-top:10px">Keeps your photos and videos safe if you lose your phone or reinstall the app.</p></div>';
+  }
+  h += '</div></div>';
+  if (google){
+    const total = sy.total || 0, done = sy.backedUp || 0;
+    const status = sy.state === 'running' ? esc(sy.msg || 'Backing up…') : sy.state === 'signin' ? 'Paused — reconnect your account' : sy.state === 'error' ? esc(sy.msg || 'Problem') : sy.state === 'wifi' ? 'Waiting for Wi-Fi' : (done >= total ? 'Everything is backed up' : (total - done) + ' waiting');
+    h += '<div class="sec"><h4>Google backup</h4><div class="card">' +
+      row('sync', sy.state === 'signin' || sy.state === 'error' ? 'alert' : 'cloudCheck', status, done + ' of ' + itemsWord(total) + ' backed up · last checked ' + ago(sy.last), sy.state === 'running' ? '<span class="spin"></span>' : '<span class="rv">'+icon('refresh')+'</span>') +
+      row('wifi', 'wifi', 'Back up on Wi-Fi only', 'Saves mobile data with big videos', toggle(st.wifiOnly)) +
+      row('pull', 'download', 'Download everything to this phone', 'Keep full copies for viewing without internet', sy.pullAll ? '<span class="spin"></span>' : '') +
+      '</div><p class="fine" style="text-align:left;padding:8px 6px 0">Saved in a hidden ' + esc(appName()) + ' folder in your Google Drive. Only this app can open it, and it uses your Google storage.</p></div>';
+  }
+  h += '<div class="sec"><h4>Security</h4><div class="card">' +
+    row('pin', 'key', 'Change PIN', '') +
+    row('autolock', 'clock', 'Auto-lock', esc(lockNames[st.lockDelay] || (st.lockDelay + ' seconds')) + ' after leaving the app') +
+    row('secure', 'shield', 'Block screenshots', 'Also hides the vault in the Recent apps screen', toggle(st.secure)) +
+    '</div></div>';
+  h += '<div class="sec"><h4>Notifications</h4><div class="card">' +
+    row('notif', 'bell', 'Notifications', st.notificationsOn ? 'On — you\'ll hear about updates and messages' : 'Off — tap to turn on', toggle(st.notificationsOn)) +
+    '</div></div>';
+  h += '<div class="sec"><h4>App update</h4><div class="card" id="updCard">' + updateRowHTML() + '</div></div>';
+  h += '<div class="sec"><h4>Storage</h4><div class="card">' +
+    row('storage', 'storage', 'Using ' + fmtSize(store.used) + ' on this phone', fmtSize(store.free) + ' free · ' + itemsWord(store.count || 0)) +
+    row('bin', 'trash', 'Recently deleted', itemsWord(binItems().length), '<span class="rv">'+icon('chevron')+'</span>') +
+    '</div></div>';
+  h += '<div class="sec"><h4>Help</h4><div class="card">' + row('help', 'help', 'How to use ' + esc(appName()), 'Tips for PIN, albums, backup and updates', '<span class="rv">'+icon('chevron')+'</span>') + '</div></div>';
+  if (!google) h += '<div class="sec"><h4>Danger zone</h4><div class="card">' + row('reset', 'trash', 'Delete guest vault', 'Deletes every photo, video and album on this phone', '', 'danger') + '</div></div>';
+  h += '<p class="foot">' + esc(appName()) + ' · version ' + esc(st.versionName || '') + '</p>';
+  p.el.querySelector('#setBody').innerHTML = h;
+}
+function updateRowHTML(){
+  const st = S.state, u = S.notices.items.find(i => i.kind === 'update');
+  if (S.update && S.update.busy) return '<div class="row"><span class="ri">'+icon('update')+'</span><span class="rt"><b>Downloading update…</b><div class="bar"><i style="width:'+(S.update.pct > 0 ? S.update.pct : 5)+'%"></i></div></span></div>';
+  if (u) return row('install', 'update', 'Version ' + esc(u.versionName) + ' is available', 'You have ' + esc(st.versionName) + '. Tap to update now.', '<span class="btn gold small">Update</span>');
+  return row('checkupd', 'update', 'Version ' + esc(st.versionName || ''), st.updatesOn ? 'Tap to check for updates' : 'Updates are off in this build', '<span class="rv">'+icon('refresh')+'</span>');
+}
+async function settingAction(k, p){
+  const st = S.state;
+  if (k === 'google'){ const r = await call('signIn'); if (r.ok){ refreshState(); toast('Backing up to ' + r.email); N.syncNow(); p.render(); renderChip(); } else if (!r.cancelled) dialog({icon:'alert', title:'Couldn\'t sign in', body:r.error, cancel:false}); return; }
+  if (k === 'signout'){
+    const sy = J(N.syncStatus(), {}); const waiting = (sy.total || 0) - (sy.backedUp || 0);
+    const ok = await dialog({icon:'logout', danger:waiting > 0, title:'Sign out?', body: waiting > 0
+      ? waiting + ' ' + (waiting === 1 ? 'item isn\'t' : 'items aren\'t') + ' backed up yet. If you sign out now, ' + (waiting === 1 ? 'it' : 'they') + ' will be deleted from this phone and lost.\n\nStay signed in until backup finishes.'
+      : 'Your vault will be removed from this phone. Everything stays safe in ' + st.email + ' — sign in again any time to get it back.', ok: waiting > 0 ? 'Sign out anyway' : 'Sign out'});
+    if (!ok) return;
+    await call('signOut'); location.reload(); return;
+  }
+  if (k === 'sync'){ if (S.sync.state === 'signin'){ const r = await call('reconnect'); if (r.ok) toast('Reconnected'); else if (!r.cancelled) toast(r.error, 4000); } else { N.syncNow(); toast('Checking backup…'); } return; }
+  if (k === 'wifi'){ N.setSetting('wifiOnly', String(!st.wifiOnly)); p.render(); return; }
+  if (k === 'pull'){ const ok = await dialog({icon:'download', title:'Download everything?', body:'Full copies of all photos and videos will be saved on this phone, so they open without internet. This can use a lot of data and storage.', ok:'Download'}); if (ok){ N.downloadEverything(); toast('Downloading in the background…'); setTimeout(() => p.render(), 400); } return; }
+  if (k === 'pin'){ startPin('verify', {cancel:true}); return; }
+  if (k === 'autolock'){
+    const v = await sheet('Auto-lock', [0,30,60,300].map(s => ({icon:'clock', label:{0:'Immediately',30:'After 30 seconds',60:'After 1 minute',300:'After 5 minutes'}[s], value:String(s), checked:st.lockDelay === s})));
+    if (v != null){ N.setSetting('lockDelay', v); p.render(); } return;
+  }
+  if (k === 'secure'){ N.setSetting('secure', String(!st.secure)); p.render(); return; }
+  if (k === 'notif'){ N.requestNotifications(); setTimeout(() => p.render(), 1500); return; }
+  if (k === 'checkupd'){
+    if (!st.updatesOn){ toast('This build has no update link.'); return; }
+    toast('Checking for updates…');
+    S.notices = await call('refreshNotices'); renderBell();
+    const u = S.notices.items.find(i => i.kind === 'update');
+    if (!u) toast('You have the latest version (' + st.versionName + ')'); else p.render();
+    return;
+  }
+  if (k === 'install'){ startUpdate(); return; }
+  if (k === 'bin'){ openBin(); return; }
+  if (k === 'help'){ openInfo(); return; }
+  if (k === 'reset'){
+    const ok = await dialog({icon:'alert', danger:true, title:'Delete guest vault?', body:'Every photo, video and album in this vault will be deleted from this phone. This can\'t be undone.', ok:'Delete everything'});
+    if (!ok) return;
+    const sure = await dialog({title:'Are you sure?', body:'There is no backup of a guest vault.', ok:'Yes, delete', danger:true});
+    if (sure){ await call('resetApp'); location.reload(); }
+  }
+}
+async function startUpdate(){
+  if (S.update && S.update.busy) return;
+  S.update = {busy:true, pct:0}; refreshUpdateUI();
+  const r = await call('installUpdate');
+  S.update = null; refreshUpdateUI();
+  if (!r.ok) dialog({icon:'alert', title:'Update didn\'t finish', body:r.error || 'Please try again.', cancel:false});
+}
+function refreshUpdateUI(){
+  const c = document.getElementById('updCard'); if (c) c.innerHTML = updateRowHTML();
+  const n = document.getElementById('noticeUpd'); if (n){ n.disabled = !!(S.update && S.update.busy); n.textContent = S.update && S.update.busy ? 'Downloading… ' + (S.update.pct > 0 ? S.update.pct + '%' : '') : 'Update now'; }
+}
+
+// ---------- notices (bell) ----------
+async function refreshNotices(fetch){
+  S.notices = J(N.notices(), {items:[],unread:0}); renderBell();
+  if (fetch){ S.notices = await call('refreshNotices'); renderBell(); const p = topPage('notices'); if (p) p.render(); }
+}
+function renderBell(){ const b = $('#bellBadge'); const n = S.notices.unread || 0; b.hidden = !n; b.textContent = n > 9 ? '9+' : n; }
+function openNotices(){
+  if (topPage('notices')) return;
+  const p = openPage('notices', head('Notifications', '', '<button class="ib" data-refresh aria-label="Check now">'+icon('refresh')+'</button>') + '<main class="scroll"><div class="nbody"></div><div class="pad-bottom"></div></main>');
+  p.render = () => {
+    const items = S.notices.items || [];
+    let h = '';
+    if (!items.length) h = '<div class="empty"><div class="ring">'+icon('bell')+'</div><b>No notifications yet</b><p>App updates and messages from the app owner will show up here.</p></div>';
+    for (const n of items){
+      const upd = n.kind === 'update';
+      h += '<div class="notice'+(n.read?'':' unread')+'"><span class="ri">'+icon(upd ? 'update' : 'message')+'</span><div class="nt"><b>'+esc(n.title || appName())+'</b>'+(n.body?'<p>'+esc(n.body)+'</p>':'')+(n.date?'<time>'+esc(niceDate(n.date))+'</time>':'')+
+        (upd ? '<button class="btn gold" id="noticeUpd">Update now</button>' : '')+'</div></div>';
+    }
+    p.el.querySelector('.nbody').innerHTML = h;
+    const u = p.el.querySelector('#noticeUpd'); if (u) u.onclick = startUpdate;
+    refreshUpdateUI();
+  };
+  p.render();
+  N.markNoticesRead(); setTimeout(() => { S.notices.unread = 0; renderBell(); }, 300);
+  p.el.querySelector('[data-refresh]').onclick = async () => { toast('Checking…'); await refreshNotices(true); N.markNoticesRead(); };
+}
+function niceDate(s){ const t = Date.parse(s); return isNaN(t) ? s : dayLabel(t) + ', ' + timeLabel(t); }
+
+// ---------- info ----------
+function openInfo(){
+  if (topPage('info')) return;
+  const A = esc(appName());
+  const sec = (ic, t, lis) => '<div class="help"><h3>'+icon(ic)+t+'</h3><ul>'+lis.map(l => '<li>'+l+'</li>').join('')+'</ul></div>';
+  const h = head('How to use ' + appName()) + '<main class="scroll"><div class="info-hero"><span class="emblem" data-emblem></span><p>Your private place for photos and videos — locked, hidden from the Gallery, and backed up if you use Google.</p></div>' +
+    sec('user', 'Getting started', ['<b>Continue with Google</b> to back up to your own Google account. If you uninstall the app or get a new phone, sign in with the same Gmail and everything comes back.', '<b>Continue as guest</b> to keep things on this phone only. Guest photos are lost if you uninstall the app.', 'You can switch from guest to Google any time in <b>Settings</b>.']) +
+    sec('lock', 'Your PIN', ['You enter your 4-digit PIN every time you open ' + A + '.', 'Choose how fast it locks in <b>Settings › Auto-lock</b>.', 'Forgot it? Tap <b>Forgot PIN?</b> and confirm with your phone\'s screen lock to choose a new one.', 'After 5 wrong tries you have to wait a little before trying again.']) +
+    sec('plus', 'Adding photos & videos', ['Tap the gold <b>+</b> button and pick photos and videos.', 'Or in your Gallery, select items, tap <b>Share</b> and choose <b>' + A + '</b>.', 'Items are <b>copied</b> into the vault. To hide them completely, delete the originals from your Gallery afterwards.']) +
+    sec('album', 'Albums', ['Open the <b>Albums</b> tab and tap <b>New album</b>.', 'Inside an album, tap <b>+</b> to add from your phone or from your vault.', 'Deleting an album doesn\'t delete its photos and videos.']) +
+    sec('selectAll', 'Select, share, save & delete', ['<b>Press and hold</b> a photo to select it, then tap more to select several.', 'Use the buttons at the bottom to add to an album, share, save back to your Gallery, or delete.', 'Deleted items go to <b>Recently deleted</b> (in Albums) for 30 days, so you can restore them.']) +
+    sec('cloudCheck', 'Backup', ['The chip at the top shows backup progress. Big videos back up faster on Wi-Fi.', 'Turn on <b>Back up on Wi-Fi only</b> in Settings to save mobile data.', 'Backups use your Google account\'s storage (15 GB free). They\'re in a hidden folder that only ' + A + ' can open, so not even the app owner can see your photos.']) +
+    sec('bell', 'Updates & notifications', ['The <b>bell</b> shows new versions of the app and messages from the app owner.', 'To update, tap <b>Update now</b> in the bell, or go to <b>Settings › App update</b>. Your photos stay safe when you update.', 'The first time, Android may ask you to allow installs from ' + A + '. Turn it on and go back.']) +
+    sec('shield', 'Privacy', ['Photos and videos are stored inside the app, not in your Gallery or file manager.', 'Screenshots are blocked and the vault is hidden in Recent apps (you can change this in Settings).']) +
+    '<p class="foot">' + A + ' · version ' + esc(S.state.versionName || '') + '</p><div class="pad-bottom"></div></main>';
+  const p = openPage('info', h);
+  p.el.querySelectorAll('[data-emblem]').forEach(x => x.innerHTML = emblem());
+}
+
+// ---------- viewer ----------
+const V = { list:[], i:0, ctx:null, el:null, z:{s:1,x:0,y:0}, g:null, lastTap:0, tapTimer:null };
+function openViewer(list, i, ctx){
+  V.list = list.map(x => x.id); V.i = i; V.ctx = ctx;
+  const v = el('<div id="viewer"><div class="vstage"></div>' +
+    '<div class="vtop"><button class="ib" data-v="close" aria-label="Back">'+icon('back')+'</button><div class="vt"><b></b><span></span></div><button class="ib" data-v="info" aria-label="Details">'+icon('info')+'</button></div>' +
+    '<div class="vbottom"></div></div>');
+  document.body.appendChild(v); V.el = v;
+  v.addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) viewerAction(b.dataset.v); });
+  bindViewerGestures(v.querySelector('.vstage'));
+  showItem();
+}
+function closeViewer(){ if (!V.el) return; pauseVideo(); V.el.remove(); V.el = null; }
+function curItem(){ return S.byId.get(V.list[V.i]); }
+function showItem(dir){
+  const it = curItem(); if (!it){ closeViewer(); return; }
+  V.z = {s:1,x:0,y:0};
+  const stage = V.el.querySelector('.vstage');
+  pauseVideo();
+  const t = it.taken || it.added;
+  V.el.querySelector('.vt b').textContent = dayLabel(t);
+  V.el.querySelector('.vt span').textContent = timeLabel(t) + ' · ' + fmtSize(it.size) + (it.type === 'video' ? ' · ' + fmtDur(it.dur) : '');
+  const bin = !!it.trashed;
+  const acts = bin ? [['restore','restore','Restore'],['forever','trash','Delete forever','danger']]
+    : [['share','share','Share'], ...(S.state.sdk >= 29 ? [['save','download','Save']] : []), ['album','folderPlus','Album'], ['delete','trash','Delete','danger']];
+  V.el.querySelector('.vbottom').innerHTML = acts.map(a => '<button data-v="'+a[0]+'" class="'+(a[3]||'')+'">'+icon(a[1])+'<span>'+a[2]+'</span></button>').join('');
+  V.el.classList.toggle('video', it.type === 'video' && !!it.src);
+  let inner;
+  if (!it.src){
+    inner = (it.thumb ? '<img class="blur" src="'+esc(it.thumb)+'" alt="">' : '') + '<div class="vload"><span class="spin"></span><span class="vpct">Getting it from Google Drive…</span></div>';
+    fetchForViewer(it.id);
+  } else if (it.type === 'video'){
+    inner = '<video src="'+esc(it.src)+'" controls playsinline preload="metadata"'+(it.thumb?' poster="'+esc(it.thumb)+'"':'')+'></video>';
+  } else {
+    inner = '<img class="main" src="'+esc(it.src)+'" alt="">';
+  }
+  const slide = el('<div class="vslide">'+inner+'</div>');
+  stage.innerHTML = ''; stage.appendChild(slide);
+  if (dir){ slide.style.transform = 'translateX('+(dir*40)+'px)'; slide.style.opacity = '.3'; requestAnimationFrame(() => { slide.style.transition = 'transform .18s, opacity .18s'; slide.style.transform = ''; slide.style.opacity = ''; }); }
+  const vid = slide.querySelector('video');
+  if (vid) vid.addEventListener('error', () => {
+    V.el.classList.remove('video');
+    slide.innerHTML = '<div class="vload">'+icon('film')+'<span>This video can\'t play inside the app.</span><button class="btn gold small" data-v="openwith">'+icon('external')+'Open with another app</button></div>';
+  });
+  const img = slide.querySelector('img.main');
+  if (img) img.addEventListener('error', () => { slide.innerHTML = '<div class="vload">'+icon('image')+'<span>This photo can\'t be shown here.</span><button class="btn gold small" data-v="openwith">'+icon('external')+'Open with another app</button></div>'; });
+}
+async function fetchForViewer(id){
+  if (S.downloads[id]) return;
+  S.downloads[id] = true;
+  const r = await call('ensureLocal', id);
+  delete S.downloads[id];
+  if (r.ok){ loadLib(); if (V.el && V.list[V.i] === id) showItem(); }
+  else if (V.el && V.list[V.i] === id){ const l = V.el.querySelector('.vload'); if (l) l.innerHTML = icon('alert') + '<span>' + esc(r.error || 'Couldn\'t download') + '</span><button class="btn gold small" data-v="retry">Try again</button>'; }
+}
+function pauseVideo(){ if (!V.el) return; const v = V.el.querySelector('video'); if (v) try { v.pause(); } catch(e){} }
+function go(d){ const n = V.i + d; if (n < 0 || n >= V.list.length) return false; V.i = n; showItem(d); return true; }
+async function viewerAction(a){
+  const it = curItem(); if (!it) return;
+  if (a === 'close') return closeViewer();
+  if (a === 'retry') return showItem();
+  if (a === 'openwith'){ if (!(await ensureLocalAll([it.id]))) return; const r = await call('openWith', it.id); if (!r.ok) toast(r.error); return; }
+  if (a === 'info'){
+    const al = (it.albums||[]).map(id => albumById(id)).filter(Boolean).map(x => x.name);
+    const lines = [it.name, fmtSize(it.size) + (it.w ? ' · ' + it.w + ' × ' + it.h : '') + (it.type === 'video' ? ' · ' + fmtDur(it.dur) : ''),
+      (it.taken ? 'Taken ' + fullDate(it.taken) + '\n' : '') + 'Added ' + fullDate(it.added),
+      S.state.mode === 'google' ? (it.backedUp ? 'Backed up to Google Drive' : 'Waiting to back up') : 'Only on this phone (guest)',
+      al.length ? 'Albums: ' + al.join(', ') : 'Not in any album'];
+    return dialog({icon: it.type === 'video' ? 'film' : 'image', title:'Details', body:lines.join('\n'), ok:'Close', cancel:false});
+  }
+  const done = await itemAction(a, [it.id], V.ctx);
+  if (done && (a === 'delete' || a === 'restore' || a === 'forever' || (a === 'remove'))){
+    V.list.splice(V.i, 1);
+    if (!V.list.length) return closeViewer();
+    if (V.i >= V.list.length) V.i = V.list.length - 1;
+    showItem();
+  }
+}
+function applyZoom(){ const img = V.el && V.el.querySelector('img.main'); if (!img) return; img.style.transform = 'translate('+V.z.x+'px,'+V.z.y+'px) scale('+V.z.s+')'; }
+function clampZoom(){
+  const img = V.el.querySelector('img.main'); if (!img) return;
+  if (V.z.s <= 1.01){ V.z = {s:1,x:0,y:0}; return; }
+  const r = V.el.querySelector('.vstage').getBoundingClientRect();
+  const w = img.offsetWidth * V.z.s, h = img.offsetHeight * V.z.s, ox = img.offsetLeft, oy = img.offsetTop;
+  // keep the zoomed photo covering the screen (or centred if it's smaller than the screen)
+  V.z.x = w > r.width ? Math.min(-ox, Math.max(r.width - w - ox, V.z.x)) : (r.width - w) / 2 - ox;
+  V.z.y = h > r.height ? Math.min(-oy, Math.max(r.height - h - oy, V.z.y)) : (r.height - h) / 2 - oy;
+}
+function zoomAt(cx, cy, ns){
+  const img = V.el.querySelector('img.main'); if (!img) return;
+  const r = V.el.querySelector('.vstage').getBoundingClientRect();
+  const px = cx - r.left - img.offsetLeft, py = cy - r.top - img.offsetTop;
+  const s0 = V.z.s;
+  V.z.x = px - (px - V.z.x) * ns / s0; V.z.y = py - (py - V.z.y) * ns / s0; V.z.s = ns;
+}
+function bindViewerGestures(stage){
+  const dist = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  stage.addEventListener('touchstart', e => {
+    const isVideo = !!e.target.closest('video');
+    if (e.touches.length === 2 && stage.querySelector('img.main')){
+      const t = e.touches; V.g = {m:'pinch', d0:dist(t), s0:V.z.s, cx:(t[0].clientX+t[1].clientX)/2, cy:(t[0].clientY+t[1].clientY)/2};
+      return;
+    }
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0];
+    if (isVideo){ const r = e.target.getBoundingClientRect(); if (t.clientY > r.bottom - 90){ V.g = null; return; } }
+    V.g = {m: V.z.s > 1 ? 'pan' : 'swipe', sx:t.clientX, sy:t.clientY, x0:V.z.x, y0:V.z.y, t:Date.now(), moved:false, video:isVideo};
+  }, {passive:true});
+  stage.addEventListener('touchmove', e => {
+    const g = V.g; if (!g) return;
+    const slide = stage.querySelector('.vslide');
+    if (g.m === 'pinch' && e.touches.length === 2){
+      const img = stage.querySelector('img.main'); if (!img) return;
+      const ns = Math.max(1, Math.min(5, g.s0 * dist(e.touches) / g.d0));
+      zoomAt(g.cx, g.cy, ns); applyZoom(); return;
+    }
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0], dx = t.clientX - g.sx, dy = t.clientY - g.sy;
+    if (Math.abs(dx) > 8 || Math.abs(dy) > 8) g.moved = true;
+    if (g.m === 'pan'){ V.z.x = g.x0 + dx; V.z.y = g.y0 + dy; applyZoom(); }
+    else if (g.m === 'swipe' && slide && Math.abs(dx) > Math.abs(dy)){ slide.style.transition = ''; slide.style.transform = 'translateX('+dx+'px)'; g.dx = dx; }
+    else if (g.m === 'swipe' && slide && dy > 0 && Math.abs(dy) > Math.abs(dx) && !g.video){ slide.style.transition = ''; slide.style.transform = 'translateY('+dy+'px) scale('+Math.max(.8, 1 - dy/1200)+')'; g.dy = dy; }
+  }, {passive:true});
+  stage.addEventListener('touchend', e => {
+    const g = V.g; if (!g) return;
+    if (e.touches.length) { if (g.m === 'pinch'){ const t = e.touches[0]; V.g = {m:'pan', sx:t.clientX, sy:t.clientY, x0:V.z.x, y0:V.z.y, moved:true}; } return; }
+    V.g = null;
+    const slide = stage.querySelector('.vslide');
+    if (g.m === 'pinch' || g.m === 'pan'){ clampZoom(); const img = stage.querySelector('img.main'); if (img){ img.style.transition = 'transform .15s'; applyZoom(); setTimeout(() => img.style.transition = '', 160); } if (g.moved) return; }
+    if (g.m === 'swipe' && slide){
+      if (g.dx && Math.abs(g.dx) > 70){ if (go(g.dx < 0 ? 1 : -1)) return; }
+      if (g.dy && g.dy > 120){ closeViewer(); return; }
+      if (g.dx || g.dy){ slide.style.transition = 'transform .18s'; slide.style.transform = ''; return; }
+    }
+    if (g.moved || g.video) return;
+    // tap / double tap
+    const now = Date.now(), touch = e.changedTouches[0];
+    if (now - V.lastTap < 280 && stage.querySelector('img.main')){
+      clearTimeout(V.tapTimer); V.lastTap = 0;
+      const img = stage.querySelector('img.main');
+      if (V.z.s > 1) V.z = {s:1,x:0,y:0}; else { zoomAt(touch.clientX, touch.clientY, 2.5); clampZoom(); }
+      img.style.transition = 'transform .2s'; applyZoom(); setTimeout(() => img.style.transition = '', 220);
+      return;
+    }
+    V.lastTap = now;
+    clearTimeout(V.tapTimer);
+    V.tapTimer = setTimeout(() => { if (V.el) V.el.classList.toggle('bare'); }, 280);
+  });
+  stage.addEventListener('click', e => { /* mouse fallback for testing */ if (!('ontouchstart' in window) && !e.target.closest('video,button')) V.el.classList.toggle('bare'); });
+}
+
+// ---------- changes ----------
+function libChanged(){
+  loadLib();
+  if (S.tab === 'all') renderAll(); else renderAlbums();
+  renderChip();
+  for (const p of S.pages) if (p.render) p.render();
+  if (S.sel.ctx && S.sel.ctx !== 'pickvault'){ S.sel.ids.forEach(id => { if (!S.byId.has(id)) S.sel.ids.delete(id); }); if (S.sel.ids.size) updateSel(); else endSelect(); }
+}
+function refreshState(){ S.state = J(N.state(), {}); setNames(); }
+function setNames(){ document.querySelectorAll('[data-appname]').forEach(x => x.textContent = appName()); document.title = appName(); }
+
+// ---------- events from Android ----------
+let libTimer, setTimer;
+window.__vaultEvent = (name, d) => {
+  d = d || {};
+  if (name === 'library'){ if (!S.home) return; clearTimeout(libTimer); libTimer = setTimeout(libChanged, 150); return; }
+  if (name === 'sync'){ S.sync = d; renderChip(); const p = topPage('settings'); if (p && !S.modals.length && !setTimer) setTimer = setTimeout(() => { setTimer = null; const q = topPage('settings'); if (q && !S.modals.length) q.render(); }, 1000); return; }
+  if (name === 'import'){
+    if (d.finished){ hideProgress(); return; }
+    const pct = d.pct >= 0 ? d.pct : -1;
+    showProgress('Adding ' + Math.min(d.index + 1, d.total) + ' of ' + d.total + (pct >= 0 ? ' · ' + pct + '%' : '…'), d.total ? Math.round(((d.index + Math.max(0, pct)/100) / d.total) * 100) : -1);
+    return;
+  }
+  if (name === 'shared'){ toast(d.added ? 'Added ' + itemsWord(d.added) + ' to ' + appName() : (d.error || 'Couldn\'t add those files'), 3500); return; }
+  if (name === 'download'){ if (V.el && V.list[V.i] === d.id){ const s = V.el.querySelector('.vpct'); if (s) s.textContent = 'Getting it from Google Drive… ' + (d.pct >= 0 ? d.pct + '%' : ''); } return; }
+  if (name === 'update'){ if (S.update){ S.update.pct = d.pct; refreshUpdateUI(); } return; }
+  if (name === 'notices'){ S.notices = J(N.notices(), S.notices); renderBell(); const p = topPage('notices'); if (p) p.render(); return; }
+  if (name === 'notifPermission'){ refreshState(); const p = topPage('settings'); if (p) p.render(); if (!d.granted) toast('Notifications are off. You can turn them on in Settings.'); return; }
+  if (name === 'hidden'){ pauseVideo(); return; }
+  if (name === 'lock'){ if (!S.state.pinSet || S.locked) return; S.locked = true; pauseVideo(); startPin('unlock'); return; }
+  if (name === 'open'){ if (d.screen === 'notices'){ if (S.home && !S.locked) openNotices(); else S.pendingOpen = 'notices'; } return; }
+};
+
+// ---------- back button ----------
+window.__vaultBack = () => {
+  if (S.locked || !S.home) {
+    if ($('#pin').classList.contains('on') && P.mode === 'verify'){ $('#pin').classList.remove('on'); return true; }
+    if ($('#pin').classList.contains('on') && P.after && P.after.cancel){ $('#pin').classList.remove('on'); P.after = null; return true; }
+    if (S.modals.length){ closeModal(); return true; }
+    return false;
+  }
+  if ($('#pin').classList.contains('on')){ $('#pin').classList.remove('on'); P.after = null; return true; }
+  if (S.modals.length){ closeModal(); return true; }
+  if (V.el){ if (V.z.s > 1){ V.z = {s:1,x:0,y:0}; applyZoom(); return true; } closeViewer(); return true; }
+  if (S.sel.ctx && S.sel.ctx !== 'pickvault' && S.sel.ids.size){ endSelect(); return true; }
+  if (S.pages.length){ closePage(); return true; }
+  if (S.tab !== 'all'){ S.tab = 'all'; renderHome(); return true; }
+  return false;
+};
+
+// ---------- start ----------
+function boot(){
+  document.querySelectorAll('[data-emblem]').forEach(x => x.innerHTML = emblem());
+  document.querySelectorAll('[data-i]').forEach(x => { const n = x.dataset.i; if (x.tagName === 'DIV') x.insertAdjacentHTML('afterbegin', icon(n)); else x.innerHTML = icon(n); });
+  initWelcome(); initPin(); initHome();
+  refreshState();
+  if (!S.state.mode){ $('#welcome').classList.add('on'); return; }
+  if (!S.state.pinSet){ startPin('create'); return; }
+  startPin('unlock');
+}
+boot();
+</script>
+</body>
+</html>

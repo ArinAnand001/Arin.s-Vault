@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="vault_bg">#160B1D</color>
+    <color name="vault_plum">#4B285F</color>
+    <color name="vault_gold">#B69A68</color>
+    <color name="ic_launcher_background">#4B285F</color>
+</resources>
