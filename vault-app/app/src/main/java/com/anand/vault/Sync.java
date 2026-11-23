@@ -26,7 +26,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * merges the backup's table of contents, uploads new photos/videos, removes deleted ones.
  */
 final class Sync {
-    static final String MANIFEST = "vault-manifest.json";
+    static final String LEGACY_MANIFEST = "vault-manifest.json";
+    static final String MANIFEST = "vault-manifest-v2.json";
 
     interface Done {
         void done(JSONObject result);
@@ -146,7 +147,7 @@ final class Sync {
         List<JSONObject> manifests = new ArrayList<>();
         for (JSONObject f : files) {
             String name = f.optString("name");
-            if (MANIFEST.equals(name)) manifests.add(f);
+            if (MANIFEST.equals(name) || LEGACY_MANIFEST.equals(name)) manifests.add(f);
             else byName.put(name, f);
         }
         manifests.sort(Comparator.comparing((JSONObject f) -> f.optString("modifiedTime")));
