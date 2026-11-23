@@ -780,6 +780,13 @@ function openNote(id){
     '<main class="scroll note-edit-scroll"><input class="note-title-input" data-note-title maxlength="160" placeholder="Title" autocomplete="off"><div class="note-body" data-note-body contenteditable="true" spellcheck="true" data-placeholder="Write your note…"></div><div class="note-muted">Your note is private to this vault. Photos are stored securely with your other vault media.</div></main>' +
     '<div class="note-toolbar"><button data-note-format="bold" aria-label="Bold">'+icon('bold')+'</button><button data-note-format="italic" aria-label="Italic">'+icon('italic')+'</button><button data-note-format="underline" aria-label="Underline">'+icon('underline')+'</button><button data-note-format="insertUnorderedList" aria-label="Bulleted list">'+icon('list')+'</button><button class="tool-label" data-note-add-image>'+icon('imagePlus')+'Add photo</button></div>');
   const title = p.el.querySelector('[data-note-title]');
+  p.render = () => {
+    loadLib();
+    body.querySelectorAll('img[data-note-image]').forEach(img => {
+      const item = S.byId.get(img.getAttribute('data-note-image'));
+      if (item) img.src = item.thumb || item.src || '';
+    });
+  };
   const body = p.el.querySelector('[data-note-body]');
   const pin = p.el.querySelector('[data-note-pin]');
   title.value = note.title || '';
