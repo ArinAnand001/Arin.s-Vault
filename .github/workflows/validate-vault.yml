@@ -69,6 +69,19 @@ jobs:
           restore-keys: |
             validation-gradle-${{ runner.os }}-
 
+      - name: Check embedded Notes UI JavaScript syntax
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib, re
+          source = pathlib.Path("vault-app/app/src/main/assets/www/index.html").read_text(encoding="utf-8")
+          scripts = re.findall(r"<script(?:\\s[^>]*)?>(.*?)</script>", source, flags=re.I | re.S)
+          if not scripts:
+              raise SystemExit("No embedded JavaScript was found in index.html")
+          pathlib.Path("${{ runner.temp }}/vault-ui.js").write_text("\\n;\\n".join(scripts), encoding="utf-8")
+          PY
+          node --check "$RUNNER_TEMP/vault-ui.js"
+
       - name: Compile debug variant
         working-directory: vault-app
         run: |
