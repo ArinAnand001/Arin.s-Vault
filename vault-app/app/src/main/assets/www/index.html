@@ -873,9 +873,13 @@ function openNote(id){
     if (e.target.closest('[data-note-delete]')){
       const ok = await dialog({icon:'trash', danger:true, title:'Delete this note?', body:'This note and its attached photos will be removed from this vault and synced to your other devices.', ok:'Delete note'});
       if (!ok) return;
+      const deletedResult = J(N.deleteNote(id), null);
+      if (!deletedResult || deletedResult.ok === false){
+        toast(deletedResult && deletedResult.error || 'Could not delete this note');
+        return;
+      }
       deleted = true;
       clearTimeout(saveTimer);
-      N.deleteNote(id);
       closePage(p);
       loadLib();
       renderNotes();
