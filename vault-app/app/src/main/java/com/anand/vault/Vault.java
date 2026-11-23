@@ -961,7 +961,7 @@ final class Vault {
     synchronized String manifestJson() throws JSONException {
         JSONObject m = new JSONObject(lib.toString());
         m.put("app", "vault");
-        m.put("v", 1);
+        m.put("v", 2);
         return m.toString();
     }
 
