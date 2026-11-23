@@ -11,3 +11,5 @@ Package name: `com.anand.vault`
 Build workflow runner setup was refreshed for Android SDK 36.
 
 SDK licence step adjusted for CI retry.
+
+Rebuild after APK publish filename correction.
