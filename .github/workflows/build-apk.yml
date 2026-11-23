@@ -1,0 +1,215 @@
+# Builds the Android app from Vault-app.zip and publishes the newest APK as a GitHub Release.
+# Notifications can be sent from Actions > Vault app > Run workflow.
+#
+# Signing safety:
+# Add KEYSTORE_BASE64 and KEYSTORE_PASSWORD as GitHub Actions repository secrets.
+# The keystore is written only to the temporary runner and is never committed to this public repository.
+
+name: Vault app
+
+on:
+  push:
+    paths:
+      - 'Vault-app.zip'
+  workflow_dispatch:
+    inputs:
+      title:
+        description: 'Notification title (optional)'
+        required: false
+        default: ''
+      message:
+        description: 'Notification message for everyone who has the app. Leave empty to just rebuild the app.'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vault-app
+  cancel-in-progress: false
+
+env:
+  APP_NAME: Vault
+
+jobs:
+  notify:
+    name: Send a notification
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.message != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Add the message to notifications.json
+        env:
+          TITLE: ${{ github.event.inputs.title }}
+          MESSAGE: ${{ github.event.inputs.message }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import datetime, json, os, pathlib, secrets, time
+          path = pathlib.Path("notifications.json")
+          data = {"messages": []}
+          if path.exists():
+              try:
+                  data = json.loads(path.read_text(encoding="utf-8"))
+              except Exception:
+                  print("::warning::notifications.json was damaged, starting a new one")
+          messages = data.get("messages") or []
+          messages.insert(0, {
+              "id": "m%d-%s" % (time.time(), secrets.token_hex(2)),
+              "title": os.environ.get("TITLE", "").strip(),
+              "body": os.environ["MESSAGE"].replace("\\n", "\n").strip(),
+              "date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+          })
+          data["messages"] = messages[:50]
+          path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+          PY
+
+      - name: Save the notification
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add notifications.json
+          git commit -m "Send a notification"
+          BRANCH="${GITHUB_REF_NAME}"
+          for i in 1 2 3; do
+            if git pull --rebase origin "$BRANCH" && git push origin "HEAD:$BRANCH"; then
+              echo "### Notification sent" >> "$GITHUB_STEP_SUMMARY"
+              echo "The app checks for new notifications when it opens and during its background refresh." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Could not save the notification. Run it again."
+          exit 1
+
+  build:
+    name: Build and publish the APK
+    if: github.event_name != 'workflow_dispatch' || github.event.inputs.message == ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Find and extract the Android project
+        id: src
+        run: |
+          set -euo pipefail
+          ZIP="Vault-app.zip"
+          if [ ! -f "$ZIP" ]; then
+            echo "::error::Vault-app.zip was not found in the repository root."
+            exit 1
+          fi
+          rm -rf "$RUNNER_TEMP/vault-src"
+          mkdir -p "$RUNNER_TEMP/vault-src"
+          unzip -q "$ZIP" -d "$RUNNER_TEMP/vault-src"
+          SETTINGS=$(find "$RUNNER_TEMP/vault-src" -name settings.gradle -not -path '*/__MACOSX/*' | head -n 1)
+          if [ -z "$SETTINGS" ]; then
+            echo "::error::Vault-app.zip does not contain an Android Gradle project (settings.gradle missing)."
+            exit 1
+          fi
+          PROJECT_DIR=$(dirname "$SETTINGS")
+          if [ ! -f "$PROJECT_DIR/app/build.gradle" ]; then
+            echo "::error::The Android app module app/build.gradle is missing."
+            exit 1
+          fi
+          echo "dir=$PROJECT_DIR" >> "$GITHUB_OUTPUT"
+          echo "Android project found at: $PROJECT_DIR"
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Gradle
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/gradle.zip" https://services.gradle.org/distributions/gradle-8.14.3-bin.zip
+          unzip -q "$RUNNER_TEMP/gradle.zip" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/gradle-8.14.3/bin" >> "$GITHUB_PATH"
+
+      - name: Cache Gradle files
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('Vault-app.zip') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: Prepare the release signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "::error::Add KEYSTORE_BASE64 and KEYSTORE_PASSWORD under Settings > Secrets and variables > Actions. The keystore must not be committed to this public repository."
+            exit 1
+          fi
+          KS="$RUNNER_TEMP/vault-release.keystore"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$KS"
+          if ! keytool -list -keystore "$KS" -storepass "$KEYSTORE_PASSWORD" -alias vault >/dev/null 2>&1; then
+            echo "::error::The signing secrets are invalid or the keystore alias is not 'vault'."
+            exit 1
+          fi
+          SHA1=$(keytool -exportcert -rfc -keystore "$KS" -storepass "$KEYSTORE_PASSWORD" -alias vault | openssl x509 -noout -fingerprint -sha1 | cut -d= -f2)
+          echo "KEYSTORE_PATH=$KS" >> "$GITHUB_ENV"
+          echo "KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+          echo "SHA1=$SHA1" >> "$GITHUB_ENV"
+          {
+            echo "### Android signing details"
+            echo "- Package name: `com.anand.vault`"
+            echo "- SHA-1 certificate fingerprint: `$SHA1`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build the APK
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+          PROJECT_DIR: ${{ steps.src.outputs.dir }}
+        run: |
+          set -euo pipefail
+          SAFE=$(printf '%s' "$APP_NAME" | tr -c 'A-Za-z0-9._-' '-' | sed 's/^-*//; s/-*$//')
+          SAFE=${SAFE:-Vault}
+          echo "APK_FILE=$SAFE.apk" >> "$GITHUB_ENV"
+          cd "$PROJECT_DIR"
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          gradle assembleRelease --no-daemon --stacktrace
+          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/$SAFE.apk"
+          ls -lh "$GITHUB_WORKSPACE/$SAFE.apk"
+
+      - name: Publish the APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          N="${GITHUB_RUN_NUMBER}"
+          SUBJECT=$(git log -1 --format=%s "$GITHUB_SHA" || true)
+          SIZE=$(stat -c %s "$APK_FILE")
+          N="$N" SUBJECT="$SUBJECT" SIZE="$SIZE" python3 - <<'PY'
+          import datetime, json, os
+          json.dump({
+              "versionCode": int(os.environ["N"]),
+              "versionName": "1.%s" % os.environ["N"],
+              "apk": os.environ["APK_FILE"],
+              "size": int(os.environ["SIZE"]),
+              "notes": os.environ.get("SUBJECT", ""),
+              "date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+          }, open("version.json", "w"), indent=2)
+          PY
+          LINK="https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/$APK_FILE"
+          NOTES="Install: open this release on your Android phone, download $APK_FILE, and tap Install. Existing users should use the app's in-app update option. Always-current APK: $LINK"
+          gh release create "v1.$N" "$APK_FILE" version.json --title "${APP_NAME} 1.$N" --notes "$NOTES" --latest --target "$GITHUB_SHA"
+          gh release list --limit 100 --json tagName,createdAt --jq 'sort_by(.createdAt) | reverse | .[5:] | .[].tagName' |
+            while read -r tag; do gh release delete "$tag" --yes --cleanup-tag || true; done
+          {
+            echo "### ${APP_NAME} 1.$N is ready"
+            echo "Download: $LINK"
+          } >> "$GITHUB_STEP_SUMMARY"
