@@ -316,7 +316,7 @@ button.row:active{background:rgba(255,255,255,.04)}
   <div class="wl-actions">
     <button class="btn google" id="btnGoogle"></button>
     <button class="btn ghost" id="btnGuest">Continue as guest</button>
-    <p class="fine">With Google, your photos and videos come back if you reinstall the app. As a guest they stay on this phone only and are lost if the app is uninstalled.</p>
+    <p class="fine">With Google, your photos, videos and notes come back if you reinstall the app. As a guest they stay on this phone only and are lost if the app is uninstalled.</p>
   </div>
 </section>
 
@@ -1299,15 +1299,16 @@ function openInfo(){
   if (topPage('info')) return;
   const A = esc(appName());
   const sec = (ic, t, lis) => '<div class="help"><h3>'+icon(ic)+t+'</h3><ul>'+lis.map(l => '<li>'+l+'</li>').join('')+'</ul></div>';
-  const h = head('How to use ' + appName()) + '<main class="scroll"><div class="info-hero"><span class="emblem" data-emblem></span><p>Your private place for photos and videos — locked, hidden from the Gallery, and backed up if you use Google.</p></div>' +
-    sec('user', 'Getting started', ['<b>Continue with Google</b> to back up to your own Google account. If you uninstall the app or get a new phone, sign in with the same Gmail and everything comes back.', '<b>Continue as guest</b> to keep things on this phone only. Guest photos are lost if you uninstall the app.', 'You can switch from guest to Google any time in <b>Settings</b>.']) +
+  const h = head('How to use ' + appName()) + '<main class="scroll"><div class="info-hero"><span class="emblem" data-emblem></span><p>Your private place for photos, videos and notes — locked, hidden from the Gallery, and backed up if you use Google.</p></div>' +
+    sec('user', 'Getting started', ['<b>Continue with Google</b> to back up to your own Google account. If you uninstall the app or get a new phone, sign in with the same Gmail and everything comes back.', '<b>Continue as guest</b> to keep everything on this phone only. Guest photos, videos and notes are lost if you uninstall the app.', 'You can switch from guest to Google any time in <b>Settings</b>.']) +
     sec('lock', 'Your PIN', ['You enter your 4-digit PIN every time you open ' + A + '.', 'Choose how fast it locks in <b>Settings › Auto-lock</b>.', 'Forgot it? Tap <b>Forgot PIN?</b> and confirm with your phone\'s screen lock to choose a new one.', 'After 5 wrong tries you have to wait a little before trying again.']) +
     sec('plus', 'Adding photos & videos', ['Tap the gold <b>+</b> button and pick photos and videos.', 'Or in your Gallery, select items, tap <b>Share</b> and choose <b>' + A + '</b>.', 'Items are <b>copied</b> into the vault. To hide them completely, delete the originals from your Gallery afterwards.']) +
     sec('album', 'Albums', ['Open the <b>Albums</b> tab and tap <b>New album</b>.', 'Inside an album, tap <b>+</b> to add from your phone or from your vault.', 'Deleting an album doesn\'t delete its photos and videos.']) +
+    sec('note', 'Notes', ['Open the <b>Notes</b> tab and tap <b>+</b> to create a note.', 'Write text, apply bold, italic, underline or bullet formatting, and add photos at the cursor to place them between paragraphs.', 'Notes save automatically. Pin important notes, and sign in with Google to sync notes and their photos to your own account.']) +
     sec('selectAll', 'Select, share, save & delete', ['<b>Press and hold</b> a photo to select it, then tap more to select several.', 'Use the buttons at the bottom to add to an album, share, save back to your Gallery, or delete.', 'Deleted items go to <b>Recently deleted</b> (in Albums) for 30 days, so you can restore them.']) +
-    sec('cloudCheck', 'Backup', ['The chip at the top shows backup progress. Big videos back up faster on Wi-Fi.', 'Turn on <b>Back up on Wi-Fi only</b> in Settings to save mobile data.', 'Backups use your Google account\'s storage (15 GB free). They\'re in a hidden folder that only ' + A + ' can open, so not even the app owner can see your photos.']) +
+    sec('cloudCheck', 'Backup', ['The chip at the top shows backup progress. Big videos back up faster on Wi-Fi.', 'Turn on <b>Back up on Wi-Fi only</b> in Settings to save mobile data.', 'Backups use your Google account\'s storage (15 GB free). Photos, videos, notes and note photos are in a hidden folder that only ' + A + ' can open, so not even the app owner can see your photos.']) +
     sec('bell', 'Updates & notifications', ['The <b>bell</b> shows new versions of the app and messages from the app owner.', 'To update, tap <b>Update now</b> in the bell, or go to <b>Settings › App update</b>. Your photos stay safe when you update.', 'The first time, Android may ask you to allow installs from ' + A + '. Turn it on and go back.']) +
-    sec('shield', 'Privacy', ['Photos and videos are stored inside the app, not in your Gallery or file manager.', 'Screenshots are blocked and the vault is hidden in Recent apps (you can change this in Settings).']) +
+    sec('shield', 'Privacy', ['Photos, videos, notes and note attachments are stored inside the app, not in your Gallery or file manager.', 'Screenshots are blocked and the vault is hidden in Recent apps (you can change this in Settings).']) +
     '<p class="foot">' + A + ' · version ' + esc(S.state.versionName || '') + '</p><div class="pad-bottom"></div></main>';
   const p = openPage('info', h);
   p.el.querySelectorAll('[data-emblem]').forEach(x => x.innerHTML = emblem());
