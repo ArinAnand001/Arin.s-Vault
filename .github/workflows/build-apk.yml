@@ -11,6 +11,7 @@ on:
   push:
     paths:
       - 'Vault-app.zip'
+      - 'vault-app/**'
   workflow_dispatch:
     inputs:
       title:
@@ -94,24 +95,27 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Find and extract the Android project
+      - name: Locate the Android project
         id: src
         run: |
           set -euo pipefail
-          ZIP="Vault-app.zip"
-          if [ ! -f "$ZIP" ]; then
-            echo "::error::Vault-app.zip was not found in the repository root."
-            exit 1
+          PROJECT_DIR="$GITHUB_WORKSPACE/vault-app"
+          if [ ! -f "$PROJECT_DIR/settings.gradle" ] || [ ! -f "$PROJECT_DIR/app/build.gradle" ]; then
+            ZIP="$GITHUB_WORKSPACE/Vault-app.zip"
+            if [ ! -f "$ZIP" ]; then
+              echo "::error::Neither the extracted vault-app project nor Vault-app.zip was found."
+              exit 1
+            fi
+            rm -rf "$RUNNER_TEMP/vault-src"
+            mkdir -p "$RUNNER_TEMP/vault-src"
+            unzip -q "$ZIP" -d "$RUNNER_TEMP/vault-src"
+            SETTINGS=$(find "$RUNNER_TEMP/vault-src" -name settings.gradle -not -path '*/__MACOSX/*' | head -n 1)
+            if [ -z "$SETTINGS" ]; then
+              echo "::error::Vault-app.zip does not contain an Android Gradle project (settings.gradle missing)."
+              exit 1
+            fi
+            PROJECT_DIR=$(dirname "$SETTINGS")
           fi
-          rm -rf "$RUNNER_TEMP/vault-src"
-          mkdir -p "$RUNNER_TEMP/vault-src"
-          unzip -q "$ZIP" -d "$RUNNER_TEMP/vault-src"
-          SETTINGS=$(find "$RUNNER_TEMP/vault-src" -name settings.gradle -not -path '*/__MACOSX/*' | head -n 1)
-          if [ -z "$SETTINGS" ]; then
-            echo "::error::Vault-app.zip does not contain an Android Gradle project (settings.gradle missing)."
-            exit 1
-          fi
-          PROJECT_DIR=$(dirname "$SETTINGS")
           if [ ! -f "$PROJECT_DIR/app/build.gradle" ]; then
             echo "::error::The Android app module app/build.gradle is missing."
             exit 1
