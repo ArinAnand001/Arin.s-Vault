@@ -144,7 +144,14 @@ jobs:
             echo "::error::Android sdkmanager was not found under $SDK_ROOT/cmdline-tools."
             exit 1
           fi
+          set +o pipefail
           yes | "$SDKMANAGER" --licenses >/dev/null
+          LICENSE_STATUS=$?
+          set -o pipefail
+          if [ "$LICENSE_STATUS" -ne 0 ]; then
+            echo "::error::Android SDK licence acceptance failed."
+            exit "$LICENSE_STATUS"
+          fi
           "$SDKMANAGER" "platform-tools" "platforms;android-36" "build-tools;36.0.0"
           echo "Android SDK ready at $SDK_ROOT"
 
