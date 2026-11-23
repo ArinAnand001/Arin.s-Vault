@@ -224,8 +224,8 @@ jobs:
           cd "$PROJECT_DIR"
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           gradle assembleRelease --no-daemon --stacktrace
-          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/$SAFE.apk"
-          ls -lh "$GITHUB_WORKSPACE/$SAFE.apk"
+          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/$APK_FILE"
+          ls -lh "$GITHUB_WORKSPACE/$APK_FILE"
 
       - name: Publish the APK
         env:
