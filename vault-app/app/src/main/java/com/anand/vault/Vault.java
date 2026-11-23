@@ -54,6 +54,7 @@ import javax.crypto.spec.PBEKeySpec;
 final class Vault {
     static final long DAY = 24L * 60 * 60 * 1000;
     static final long BIN_DAYS = 30;
+    static final String NOTE_IMAGE_ALBUM = "__note_image__";
 
     private static Vault instance;
 
@@ -108,8 +109,10 @@ final class Vault {
         try {
             if (o.optJSONArray("items") == null) o.put("items", new JSONArray());
             if (o.optJSONArray("albums") == null) o.put("albums", new JSONArray());
+            if (o.optJSONArray("notes") == null) o.put("notes", new JSONArray());
             if (o.optJSONObject("gone") == null) o.put("gone", new JSONObject());
             if (o.optJSONObject("goneAlbums") == null) o.put("goneAlbums", new JSONObject());
+            if (o.optJSONObject("goneNotes") == null) o.put("goneNotes", new JSONObject());
         } catch (JSONException ignored) {
         }
     }
@@ -336,6 +339,8 @@ final class Vault {
         }
         if (mime == null) mime = "application/octet-stream";
         boolean video = mime.startsWith("video/");
+        boolean noteImage = NOTE_IMAGE_ALBUM.equals(albumId);
+        if (noteImage && video) throw new IOException("Only photos can be added to notes");
         if (!video && !mime.startsWith("image/")) throw new IOException("Only photos and videos can be added");
         if (size > 0 && size + 50L * 1024 * 1024 > freeBytes()) throw new IOException("Not enough space on this phone");
 
@@ -359,6 +364,7 @@ final class Vault {
         JSONObject it = new JSONObject();
         it.put("id", id);
         it.put("type", video ? "video" : "photo");
+        if (noteImage) it.put("noteOnly", true);
         it.put("mime", mime);
         it.put("name", name == null || name.isEmpty() ? id + "." + ext : name);
         it.put("size", out.length());
@@ -748,7 +754,7 @@ final class Vault {
     synchronized JSONObject forJs() throws JSONException {
         JSONArray items = lib.getJSONArray("items");
         JSONArray outItems = new JSONArray();
-        String[] keys = {"id", "type", "mime", "name", "size", "w", "h", "dur", "added", "taken", "trashed", "albums"};
+        String[] keys = {"id", "type", "mime", "name", "size", "w", "h", "dur", "added", "taken", "trashed", "albums", "noteOnly"};
         for (int i = 0; i < items.length(); i++) {
             JSONObject it = items.getJSONObject(i);
             String id = it.optString("id");
@@ -767,6 +773,7 @@ final class Vault {
         JSONObject out = new JSONObject();
         out.put("items", outItems);
         out.put("albums", new JSONArray(lib.getJSONArray("albums").toString()));
+        out.put("notes", new JSONArray(lib.getJSONArray("notes").toString()));
         return out;
     }
 
@@ -776,7 +783,12 @@ final class Vault {
 
     synchronized JSONObject storage() {
         long used = treeSize(root);
-        int count = lib.optJSONArray("items").length();
+        int count = 0;
+        JSONArray items = lib.optJSONArray("items");
+        for (int i = 0; i < items.length(); i++) {
+            JSONObject it = items.optJSONObject(i);
+            if (it != null && !it.optBoolean("noteOnly", false)) count++;
+        }
         return Events.obj("used", used, "free", freeBytes(), "count", count);
     }
 
@@ -786,6 +798,126 @@ final class Vault {
         File[] kids = f.listFiles();
         if (kids != null) for (File k : kids) n += treeSize(k);
         return n;
+    }
+
+    // ---------------------------------------------------------------- notes
+
+    private JSONObject findNote(String id) {
+        JSONArray notes = lib.optJSONArray("notes");
+        if (notes == null) return null;
+        for (int i = 0; i < notes.length(); i++) {
+            JSONObject n = notes.optJSONObject(i);
+            if (n != null && id.equals(n.optString("id"))) return n;
+        }
+        return null;
+    }
+
+    synchronized JSONObject createNote() throws JSONException {
+        long now = System.currentTimeMillis();
+        JSONObject n = new JSONObject();
+        n.put("id", "n" + newId());
+        n.put("title", "");
+        n.put("body", "");
+        n.put("images", new JSONArray());
+        n.put("created", now);
+        n.put("updated", now);
+        n.put("pinned", false);
+        lib.getJSONArray("notes").put(n);
+        save();
+        return new JSONObject(n.toString());
+    }
+
+    synchronized JSONObject saveNote(String id, String title, String body, String imageIdsJson) throws JSONException {
+        JSONObject n = findNote(id);
+        if (n == null) throw new JSONException("This note no longer exists");
+        String cleanTitle = title == null ? "" : title.trim();
+        if (cleanTitle.length() > 160) cleanTitle = cleanTitle.substring(0, 160);
+        String cleanBody = body == null ? "" : body;
+        if (cleanBody.length() > 300000) throw new JSONException("This note is too large to save");
+        JSONArray requested = new JSONArray(imageIdsJson == null || imageIdsJson.isEmpty() ? "[]" : imageIdsJson);
+        JSONArray images = new JSONArray();
+        Set<String> seen = new HashSet<>();
+        for (int i = 0; i < requested.length(); i++) {
+            String imageId = requested.optString(i, "");
+            JSONObject media = item(imageId);
+            if (!imageId.isEmpty() && media != null && media.optBoolean("noteOnly", false) && seen.add(imageId)) {
+                images.put(imageId);
+            }
+        }
+        n.put("title", cleanTitle);
+        n.put("body", cleanBody);
+        n.put("images", images);
+        n.put("updated", System.currentTimeMillis());
+        cleanupOrphanNoteMedia();
+        save();
+        return new JSONObject(n.toString());
+    }
+
+    synchronized JSONObject setNotePinned(String id, boolean pinned) throws JSONException {
+        JSONObject n = findNote(id);
+        if (n == null) throw new JSONException("This note no longer exists");
+        n.put("pinned", pinned);
+        n.put("updated", System.currentTimeMillis());
+        save();
+        return new JSONObject(n.toString());
+    }
+
+    synchronized void deleteNote(String id) throws JSONException {
+        JSONArray notes = lib.getJSONArray("notes");
+        JSONArray keep = new JSONArray();
+        boolean found = false;
+        for (int i = 0; i < notes.length(); i++) {
+            JSONObject n = notes.optJSONObject(i);
+            if (n != null && id.equals(n.optString("id"))) found = true;
+            else if (n != null) keep.put(n);
+        }
+        if (!found) return;
+        lib.put("notes", keep);
+        lib.getJSONObject("goneNotes").put(id, System.currentTimeMillis());
+        cleanupOrphanNoteMedia();
+        save();
+    }
+
+    synchronized void pruneNoteImages() {
+        if (cleanupOrphanNoteMedia()) save();
+    }
+
+    /** Removes private note photos that are no longer referenced by any saved note. */
+    private boolean cleanupOrphanNoteMedia() {
+        Set<String> referenced = new HashSet<>();
+        JSONArray notes = lib.optJSONArray("notes");
+        for (int i = 0; i < notes.length(); i++) {
+            JSONObject note = notes.optJSONObject(i);
+            if (note == null) continue;
+            JSONArray images = note.optJSONArray("images");
+            if (images != null) for (int j = 0; j < images.length(); j++) referenced.add(images.optString(j));
+        }
+        JSONArray items = lib.optJSONArray("items");
+        JSONArray keep = new JSONArray();
+        boolean changed = false;
+        long now = System.currentTimeMillis();
+        for (int i = 0; i < items.length(); i++) {
+            JSONObject it = items.optJSONObject(i);
+            if (it == null) continue;
+            String id = it.optString("id");
+            if (it.optBoolean("noteOnly", false) && !referenced.contains(id)) {
+                try {
+                    lib.getJSONObject("gone").put(id, now);
+                } catch (JSONException ignored) {
+                }
+                deleteLocalFiles(it);
+                changed = true;
+            } else {
+                keep.put(it);
+            }
+        }
+        if (changed) {
+            try {
+                lib.put("items", keep);
+            } catch (JSONException ignored) {
+            }
+        }
+        return changed;
     }
 
     // ---------------------------------------------------------------- backup support (used by Sync)
@@ -845,6 +977,7 @@ final class Vault {
         }
         lib = merged;
         boolean changed = !before.equals(lib.toString());
+        if (cleanupOrphanNoteMedia()) changed = true;
         if (changed) save();
         return changed;
     }
@@ -859,6 +992,7 @@ final class Vault {
         normalize(remote);
         JSONObject gone = mergeStamps(local.getJSONObject("gone"), remote.getJSONObject("gone"));
         JSONObject goneAlbums = mergeStamps(local.getJSONObject("goneAlbums"), remote.getJSONObject("goneAlbums"));
+        JSONObject goneNotes = mergeStamps(local.getJSONObject("goneNotes"), remote.getJSONObject("goneNotes"));
 
         Map<String, JSONObject> items = new LinkedHashMap<>();
         collect(items, local.getJSONArray("items"));
@@ -905,11 +1039,29 @@ final class Vault {
         JSONArray outAlbums = new JSONArray();
         for (JSONObject al : albums.values()) outAlbums.put(al);
 
+        Map<String, JSONObject> notes = new LinkedHashMap<>();
+        collect(notes, local.getJSONArray("notes"));
+        JSONArray remoteNotes = remote.getJSONArray("notes");
+        for (int i = 0; i < remoteNotes.length(); i++) {
+            JSONObject r = remoteNotes.optJSONObject(i);
+            if (r == null || r.optString("id").isEmpty()) continue;
+            String id = r.optString("id");
+            JSONObject l = notes.get(id);
+            if (l == null || r.optLong("updated", 0) > l.optLong("updated", 0)) {
+                notes.put(id, new JSONObject(r.toString()));
+            }
+        }
+        for (Iterator<String> it = goneNotes.keys(); it.hasNext(); ) notes.remove(it.next());
+        JSONArray outNotes = new JSONArray();
+        for (JSONObject n : notes.values()) outNotes.put(n);
+
         JSONObject out = new JSONObject();
         out.put("items", outItems);
         out.put("albums", outAlbums);
+        out.put("notes", outNotes);
         out.put("gone", gone);
         out.put("goneAlbums", goneAlbums);
+        out.put("goneNotes", goneNotes);
         return out;
     }
 
