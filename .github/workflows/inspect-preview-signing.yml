@@ -20,15 +20,27 @@ jobs:
             "https://github.com/${GITHUB_REPOSITORY}/releases/download/preview-v1.5/Vault-preview.apk" \
             -o "$RUNNER_TEMP/Vault-preview-1.5.apk"
 
+      - name: Install Android APK signing tools
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          SDKMANAGER=$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)
+          set +o pipefail
+          yes | "$SDKMANAGER" --licenses >/dev/null
+          set -o pipefail
+          "$SDKMANAGER" "build-tools;36.0.0"
+          echo "APKSIGNER=$SDK_ROOT/build-tools/36.0.0/apksigner" >> "$GITHUB_ENV"
+
       - name: Read its signing certificate
         run: |
           set -euo pipefail
-          keytool -printcert -jarfile "$RUNNER_TEMP/Vault-preview-1.5.apk" | tee "$RUNNER_TEMP/certificate.txt"
-          SHA1=$(sed -n 's/^[[:space:]]*SHA1: *//p' "$RUNNER_TEMP/certificate.txt" | head -n 1)
-          if [ -z "$SHA1" ]; then
+          "$APKSIGNER" verify --verbose --print-certs "$RUNNER_TEMP/Vault-preview-1.5.apk" | tee "$RUNNER_TEMP/certificate.txt"
+          RAW_SHA1=$(sed -n 's/^Signer #1 certificate SHA-1 digest: *//p' "$RUNNER_TEMP/certificate.txt" | head -n 1 | tr '[:lower:]' '[:upper:]')
+          if [ -z "$RAW_SHA1" ]; then
             echo "::error::Could not read the APK SHA-1 fingerprint."
             exit 1
           fi
+          SHA1=$(printf '%s' "$RAW_SHA1" | sed 's/../&:/g; s/:$//')
           {
             echo "### Installed Preview 1.5 signing fingerprint"
             echo "- Package name: `com.anand.vault`"
