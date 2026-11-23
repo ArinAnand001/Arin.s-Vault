@@ -124,6 +124,11 @@ final class Bridge {
     }
 
     @JavascriptInterface
+    public void pickNoteImage(String cb) {
+        a.pickNoteImage(cb);
+    }
+
+    @JavascriptInterface
     public String createAlbum(String name) {
         try {
             String r = v.createAlbum(name).toString();
@@ -240,6 +245,58 @@ final class Bridge {
     @JavascriptInterface
     public void openWith(String cb, String id) {
         a.openWith(cb, id);
+    }
+
+    // ---------------------------------------------------------------- notes
+
+    @JavascriptInterface
+    public String createNote() {
+        try {
+            String result = v.createNote().toString();
+            changed();
+            return result;
+        } catch (Exception e) {
+            return err(e);
+        }
+    }
+
+    @JavascriptInterface
+    public String saveNote(String id, String title, String body, String imageIdsJson) {
+        try {
+            String result = v.saveNote(id, title, body, imageIdsJson).toString();
+            changed();
+            return result;
+        } catch (Exception e) {
+            return err(e);
+        }
+    }
+
+    @JavascriptInterface
+    public String pinNote(String id, boolean pinned) {
+        try {
+            String result = v.setNotePinned(id, pinned).toString();
+            changed();
+            return result;
+        } catch (Exception e) {
+            return err(e);
+        }
+    }
+
+    @JavascriptInterface
+    public String deleteNote(String id) {
+        try {
+            v.deleteNote(id);
+            changed();
+            return "{\"ok\":true}";
+        } catch (Exception e) {
+            return err(e);
+        }
+    }
+
+    @JavascriptInterface
+    public void pruneNoteImages() {
+        v.pruneNoteImages();
+        changed();
     }
 
     // ---------------------------------------------------------------- backup
