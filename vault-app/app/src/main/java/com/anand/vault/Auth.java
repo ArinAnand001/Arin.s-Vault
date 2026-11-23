@@ -114,7 +114,7 @@ final class Auth {
             int code = ((ApiException) e).getStatusCode();
             switch (code) {
                 case 10:
-                    return "Google sign-in isn't set up for this app yet. Add the app's SHA-1 in Google Cloud (see the setup guide), then try again.";
+                    return "Google rejected this app's signing identity. In Google Cloud > Google Auth Platform > Clients, register an Android OAuth client with package name com.anand.vault and the SHA-1 fingerprint of the certificate that signed this APK. Make sure the client is in the same Cloud project as the Drive API, then try again.";
                 case 7:
                     return "No internet connection. Check your connection and try again.";
                 case 16:
