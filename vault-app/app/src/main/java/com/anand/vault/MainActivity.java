@@ -315,6 +315,25 @@ public class MainActivity extends ComponentActivity implements Events.Sink {
         });
     }
 
+    /** Opens the system photo picker for one or more images to insert into a note. */
+    void pickNoteImage(String cbId) {
+        main.post(() -> {
+            pickCb = cbId;
+            pickAlbum = Vault.NOTE_IMAGE_ALBUM;
+            expectExternal = true;
+            try {
+                pickLauncher.launch(new PickVisualMediaRequest.Builder()
+                        .setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE)
+                        .build());
+            } catch (Exception e) {
+                expectExternal = false;
+                pickCb = null;
+                pickAlbum = null;
+                callback(cbId, Events.obj("ok", false, "error", "Couldn't open the photo picker."));
+            }
+        });
+    }
+
     private void onPicked(List<Uri> uris) {
         String cb = pickCb;
         String album = pickAlbum;
@@ -368,12 +387,15 @@ public class MainActivity extends ComponentActivity implements Events.Sink {
             int ok = 0;
             int failed = 0;
             String lastError = null;
+            boolean noteImages = Vault.NOTE_IMAGE_ALBUM.equals(albumId);
+            JSONArray addedIds = new JSONArray();
             for (int k = 0; k < total; k++) {
                 final int index = k;
                 try {
-                    vault.importUri(uris.get(k), albumId, (done, size) ->
+                    JSONObject imported = vault.importUri(uris.get(k), albumId, (done, size) ->
                             emit("import", Events.obj("index", index, "total", total,
                                     "pct", size > 0 ? (int) Math.min(100, done * 100 / size) : -1)));
+                    if (noteImages) addedIds.put(imported.optString("id"));
                     ok++;
                 } catch (Exception e) {
                     failed++;
@@ -384,6 +406,12 @@ public class MainActivity extends ComponentActivity implements Events.Sink {
             emit("import", Events.obj("index", total, "total", total, "pct", 100, "finished", true));
             emit("library", null);
             JSONObject res = Events.obj("ok", true, "added", ok, "failed", failed, "error", lastError);
+            if (noteImages) {
+                try {
+                    res.put("ids", addedIds);
+                } catch (Exception ignored) {
+                }
+            }
             if (cbId != null) callback(cbId, res);
             else emit("shared", res);
             Sync.get(this).request();
