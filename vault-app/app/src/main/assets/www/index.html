@@ -859,7 +859,7 @@ function openNote(id){
       }
       scheduleSave();
       saveNow();
-      if (result.failed) toast(result.added+' photo(s) added, '+result.failed+' couldn't be added');
+      if (result.failed) toast(result.added+' photo(s) added, '+result.failed+' couldn\'t be added');
       else if (ids.length) toast(ids.length === 1 ? 'Photo added to note' : ids.length+' photos added to note');
       return;
     }
