@@ -10,7 +10,7 @@ Vault uses Google Play services `AuthorizationClient` to request the private Dri
 - Stable release SHA-1: `52:18:5D:73:70:FD:2C:34:10:34:3B:15:82:02:69:26:C2:4E:4B:37`
 - Stable release SHA-256: `25:ED:46:F3:86:0B:C0:2E:96:F1:99:BE:D7:F0:B3:B8:81:D3:06:5F:7C:00:25:56:BB:71:24:77:CB:63:A5:8B`
 
-A separate diagnostic workflow prints the SHA-1 of the already-published Preview 1.5 APK. Add that fingerprint too if you need Google sign-in to work on the currently installed Preview 1.5 before moving to the stable signing key.
+Preview 1.5's exact signing SHA-1 has been inspected from the APK: `5F:6A:DC:B8:23:8C:F2:69:F3:2E:1A:93:46:23:06:1B:0B:90:66:98`. Add this as a separate Android OAuth client if you need Google sign-in to work on the currently installed Preview 1.5. Use the stable SHA-1 above for future stable builds.
 
 ## 1. Register the stable Android OAuth client
 
