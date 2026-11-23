@@ -11,7 +11,10 @@ on:
   push:
     paths:
       - 'Vault-app.zip'
-      - 'vault-app/**'
+      - 'vault-app/app/**'
+      - 'vault-app/build.gradle'
+      - 'vault-app/settings.gradle'
+      - 'vault-app/gradle.properties'
   workflow_dispatch:
     inputs:
       title:
