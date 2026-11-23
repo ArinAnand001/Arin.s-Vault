@@ -217,10 +217,11 @@ jobs:
           SAFE=$(printf '%s' "$APP_NAME" | tr -c 'A-Za-z0-9._-' '-' | sed 's/^-*//; s/-*$//')
           SAFE=${SAFE:-Vault}
           if [ "${BUILD_CHANNEL:-preview}" = "stable" ]; then
-            echo "APK_FILE=$SAFE.apk" >> "$GITHUB_ENV"
+            APK_FILE="$SAFE.apk"
           else
-            echo "APK_FILE=$SAFE-preview.apk" >> "$GITHUB_ENV"
+            APK_FILE="$SAFE-preview.apk"
           fi
+          echo "APK_FILE=$APK_FILE" >> "$GITHUB_ENV"
           cd "$PROJECT_DIR"
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           gradle assembleRelease --no-daemon --stacktrace
