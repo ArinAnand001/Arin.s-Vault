@@ -154,8 +154,18 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
           set -euo pipefail
+          if [ -z "$KEYSTORE_BASE64" ] && [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "BUILD_CHANNEL=preview" >> "$GITHUB_ENV"
+            echo "::warning::No private release keystore is configured. Building a debug-signed preview APK for testing only."
+            {
+              echo "### Preview build (debug-signed)"
+              echo "This APK is for installation/testing only. It is not an update-compatible production release."
+              echo "Before distributing updates, add KEYSTORE_BASE64 and KEYSTORE_PASSWORD as Actions secrets."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
-            echo "::error::Add KEYSTORE_BASE64 and KEYSTORE_PASSWORD under Settings > Secrets and variables > Actions. The keystore must not be committed to this public repository."
+            echo "::error::Both KEYSTORE_BASE64 and KEYSTORE_PASSWORD must be configured, or both left empty for a preview build."
             exit 1
           fi
           KS="$RUNNER_TEMP/vault-release.keystore"
@@ -165,6 +175,7 @@ jobs:
             exit 1
           fi
           SHA1=$(keytool -exportcert -rfc -keystore "$KS" -storepass "$KEYSTORE_PASSWORD" -alias vault | openssl x509 -noout -fingerprint -sha1 | cut -d= -f2)
+          echo "BUILD_CHANNEL=stable" >> "$GITHUB_ENV"
           echo "KEYSTORE_PATH=$KS" >> "$GITHUB_ENV"
           echo "KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
           echo "SHA1=$SHA1" >> "$GITHUB_ENV"
@@ -182,7 +193,11 @@ jobs:
           set -euo pipefail
           SAFE=$(printf '%s' "$APP_NAME" | tr -c 'A-Za-z0-9._-' '-' | sed 's/^-*//; s/-*$//')
           SAFE=${SAFE:-Vault}
-          echo "APK_FILE=$SAFE.apk" >> "$GITHUB_ENV"
+          if [ "${BUILD_CHANNEL:-preview}" = "stable" ]; then
+            echo "APK_FILE=$SAFE.apk" >> "$GITHUB_ENV"
+          else
+            echo "APK_FILE=$SAFE-preview.apk" >> "$GITHUB_ENV"
+          fi
           cd "$PROJECT_DIR"
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           gradle assembleRelease --no-daemon --stacktrace
@@ -208,12 +223,19 @@ jobs:
               "date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
           }, open("version.json", "w"), indent=2)
           PY
-          LINK="https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/$APK_FILE"
-          NOTES="Install: open this release on your Android phone, download $APK_FILE, and tap Install. Existing users should use the app's in-app update option. Always-current APK: $LINK"
-          gh release create "v1.$N" "$APK_FILE" version.json --title "${APP_NAME} 1.$N" --notes "$NOTES" --latest --target "$GITHUB_SHA"
-          gh release list --limit 100 --json tagName,createdAt --jq 'sort_by(.createdAt) | reverse | .[5:] | .[].tagName' |
-            while read -r tag; do gh release delete "$tag" --yes --cleanup-tag || true; done
-          {
-            echo "### ${APP_NAME} 1.$N is ready"
-            echo "Download: $LINK"
-          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "${BUILD_CHANNEL:-preview}" = "stable" ]; then
+            TAG="v1.$N"
+            LINK="https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/$APK_FILE"
+            NOTES="Install: download $APK_FILE and tap Install. Existing users can update from inside the app. Always-current APK: $LINK"
+            gh release create "$TAG" "$APK_FILE" version.json --title "${APP_NAME} 1.$N" --notes "$NOTES" --latest --target "$GITHUB_SHA"
+            gh release list --limit 100 --json tagName,createdAt,isPrerelease --jq 'map(select(.isPrerelease == false)) | sort_by(.createdAt) | reverse | .[5:] | .[].tagName' |
+              while read -r tag; do gh release delete "$tag" --yes --cleanup-tag || true; done
+            echo "### Stable ${APP_NAME} 1.$N is ready" >> "$GITHUB_STEP_SUMMARY"
+          else
+            TAG="preview-v1.$N"
+            LINK="https://github.com/${GITHUB_REPOSITORY}/releases/download/$TAG/$APK_FILE"
+            NOTES="PREVIEW BUILD — signed with a temporary GitHub Actions debug key. For testing only; this APK cannot be updated by future builds signed with another key. Configure a private release keystore before distributing. Download: $LINK"
+            gh release create "$TAG" "$APK_FILE" version.json --title "${APP_NAME} Preview 1.$N (debug-signed)" --notes "$NOTES" --prerelease --target "$GITHUB_SHA"
+            echo "### Preview ${APP_NAME} 1.$N is ready (debug-signed)" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "Download: $LINK" >> "$GITHUB_STEP_SUMMARY"
